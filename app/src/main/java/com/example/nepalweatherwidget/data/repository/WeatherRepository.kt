@@ -110,6 +110,7 @@ class WeatherRepository @Inject constructor(
             humidity = humidity,
             description = description,
             location = location,
+            windSpeed = windSpeed,
             timestamp = System.currentTimeMillis()
         )
 

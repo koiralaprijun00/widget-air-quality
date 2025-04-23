@@ -5,5 +5,6 @@ data class WeatherData(
     val humidity: Int,
     val description: String,
     val location: String,
+    val windSpeed: Double,
     val timestamp: Long = System.currentTimeMillis()
 ) 
