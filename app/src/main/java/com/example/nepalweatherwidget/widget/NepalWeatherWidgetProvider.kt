@@ -165,7 +165,8 @@ private fun WeatherContent(weather: WeatherData, airQuality: AirQualityData) {
             Text(
                 text = weather.location,
                 style = TextStyle(
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = ColorProvider(Color.Black, Color.Black)
                 )
             )
         }
@@ -180,14 +181,18 @@ private fun WeatherContent(weather: WeatherData, airQuality: AirQualityData) {
             Text(
                 text = "${weather.temperature}°C",
                 style = TextStyle(
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = ColorProvider(Color.Black, Color.Black)
                 )
             )
 
             Spacer(modifier = GlanceModifier.width(8.dp))
 
             Text(
-                text = weather.description
+                text = weather.description,
+                style = TextStyle(
+                    color = ColorProvider(Color.Black, Color.Black)
+                )
             )
         }
 
@@ -199,13 +204,19 @@ private fun WeatherContent(weather: WeatherData, airQuality: AirQualityData) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "PM2.5: ${String.format(Locale.US, "%.1f", airQuality.pm25)}"
+                text = "PM2.5: ${String.format(Locale.US, "%.1f", airQuality.pm25)}",
+                style = TextStyle(
+                    color = ColorProvider(Color.Black, Color.Black)
+                )
             )
 
             Spacer(modifier = GlanceModifier.width(8.dp))
 
             Text(
-                text = "PM10: ${String.format(Locale.US, "%.1f", airQuality.pm10)}"
+                text = "PM10: ${String.format(Locale.US, "%.1f", airQuality.pm10)}",
+                style = TextStyle(
+                    color = ColorProvider(Color.Black, Color.Black)
+                )
             )
         }
     }
@@ -219,10 +230,16 @@ private fun LocationUnavailableContent() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Location unavailable"
+            text = "Location unavailable",
+            style = TextStyle(
+                color = ColorProvider(Color.Black, Color.Black)
+            )
         )
         Text(
-            text = "Please enable location services"
+            text = "Please enable location services",
+            style = TextStyle(
+                color = ColorProvider(Color.Black, Color.Black)
+            )
         )
     }
 }
@@ -235,10 +252,16 @@ private fun ErrorContent(message: String) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Error"
+            text = "Error",
+            style = TextStyle(
+                color = ColorProvider(Color.Black, Color.Black)
+            )
         )
         Text(
-            text = message
+            text = message,
+            style = TextStyle(
+                color = ColorProvider(Color.Black, Color.Black)
+            )
         )
     }
 }
@@ -251,17 +274,17 @@ private fun LoadingContent() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Loading..."
+            text = "Loading...",
+            style = TextStyle(
+                color = ColorProvider(Color.Black, Color.Black)
+            )
         )
     }
 }
 
 @Composable
 private fun GlanceModifier.appWidgetBackground() = this.background(
-    ColorProvider(
-        day = Color(0xFFFFFFFF),  // White for day
-        night = Color(0xFF000000)  // Black for night
-    )
+    ColorProvider(Color.White, Color.White)
 )
 
 fun GlanceModifier.defaultPadding() = this.padding(all = 12.dp)
