@@ -1,0 +1,35 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Android Lint Check",
+            "type": "shell",
+            "command": "./gradlew lint",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Android Debug Build",
+            "type": "shell",
+            "command": "./gradlew assembleDebug --stacktrace",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Android Full Build with Warnings",
+            "type": "shell",
+            "command": "./gradlew build --warning-mode all",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        }
+    ]
+} 
