@@ -10,7 +10,6 @@ import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.color.ColorProvider
@@ -115,23 +114,6 @@ class NepalWeatherWidgetProvider : GlanceAppWidgetReceiver() {
         super.onEnabled(context)
         Log.d("WidgetProvider", "Widget enabled, starting periodic update worker.")
         WeatherUpdateWorker.startPeriodicUpdate(context)
-    }
-
-    // This function allows external components (like the worker) to trigger an update
-    suspend fun updateWidget(context: Context) {
-        Log.d("WidgetProvider", "Manual update requested.")
-        val manager = GlanceAppWidgetManager(context)
-        val glanceIds = manager.getGlanceIds(this::class.java) // Use this::class.java for the receiver
-        Log.d("WidgetProvider", "Found glance IDs: $glanceIds")
-        glanceIds.forEach { glanceId ->
-            Log.d("WidgetProvider", "Updating glance ID: $glanceId")
-            // Access the specific instance via the property delegate
-            try {
-                glanceAppWidget.update(context, glanceId)
-            } catch (e: Exception) {
-                Log.e("WidgetProvider", "Error updating widget for glance ID $glanceId", e)
-            }
-        }
     }
 }
 
