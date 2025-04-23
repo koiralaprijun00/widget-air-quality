@@ -7,4 +7,5 @@ interface WeatherRepository {
     suspend fun getWeatherData(location: String): Result<WeatherData>
     suspend fun getCachedWeatherData(): Result<WeatherData>
     suspend fun getAirQuality(): Result<AirQuality>
+    suspend fun getWeatherAndAirQuality(location: String): Result<Pair<WeatherData, AirQuality>>
 } 
