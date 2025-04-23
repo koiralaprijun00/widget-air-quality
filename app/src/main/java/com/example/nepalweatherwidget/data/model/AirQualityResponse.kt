@@ -1,8 +1,8 @@
 package com.example.nepalweatherwidget.data.model
 
-data class AirPollutionResponse(
+data class AirQualityResponse(
     val coord: Coordinates,
-    val list: List<AirPollutionData>
+    val list: List<AirQualityData>
 )
 
 data class Coordinates(
@@ -10,7 +10,7 @@ data class Coordinates(
     val lon: Double
 )
 
-data class AirPollutionData(
+data class AirQualityData(
     val dt: Long,
     val main: AirQualityIndex,
     val components: AirComponents
