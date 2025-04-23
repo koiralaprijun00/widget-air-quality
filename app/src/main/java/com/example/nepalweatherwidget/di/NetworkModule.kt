@@ -2,6 +2,7 @@ package com.example.nepalweatherwidget.di
 
 import com.example.nepalweatherwidget.data.api.AirQualityApi
 import com.example.nepalweatherwidget.data.api.WeatherApi
+import com.example.nepalweatherwidget.data.util.ApiKeys
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -16,7 +17,10 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
     private const val BASE_URL = "https://api.openweathermap.org/"
-    private const val API_KEY = "2adee0c29dec04a2674041dd545178db"
+
+    @Provides
+    @Singleton
+    fun provideApiKey(): String = ApiKeys.OPEN_WEATHER_API_KEY
 
     @Provides
     @Singleton
@@ -49,8 +53,4 @@ object NetworkModule {
     fun provideAirQualityApi(retrofit: Retrofit): AirQualityApi {
         return retrofit.create(AirQualityApi::class.java)
     }
-
-    @Provides
-    @Singleton
-    fun provideApiKey(): String = API_KEY
 } 
