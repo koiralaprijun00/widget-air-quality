@@ -1,7 +1,7 @@
 package com.example.nepalweatherwidget.di
 
-import com.example.nepalweatherwidget.data.repository.WeatherRepositoryImpl
-import com.example.nepalweatherwidget.domain.repository.WeatherRepository
+import com.example.nepalweatherwidget.data.repository.WeatherRepository
+import com.example.nepalweatherwidget.domain.repository.WeatherRepository as DomainWeatherRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -15,6 +15,6 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindWeatherRepository(
-        weatherRepositoryImpl: WeatherRepositoryImpl
-    ): WeatherRepository
+        weatherRepository: WeatherRepository
+    ): DomainWeatherRepository
 } 

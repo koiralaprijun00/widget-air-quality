@@ -29,8 +29,12 @@ class WeatherRepository @Inject constructor(
         safeApiCall {
             Log.d(TAG, "Fetching weather data for location: $location")
             val (latitude, longitude) = getCoordinatesForLocation(location)
-            Log.d(TAG, "Using coordinates: lat=$latitude, lon=$longitude")
-            
+            getWeatherData(latitude, longitude)
+        }
+
+    override suspend fun getWeatherData(latitude: Double, longitude: Double): Result<DomainWeatherData> =
+        safeApiCall {
+            Log.d(TAG, "Fetching weather data for coordinates: lat=$latitude, lon=$longitude")
             val weather = weatherApi.getWeather(
                 latitude = latitude,
                 longitude = longitude,
@@ -57,8 +61,12 @@ class WeatherRepository @Inject constructor(
         safeApiCall {
             Log.d(TAG, "Fetching air quality data")
             val (latitude, longitude) = getCoordinatesForLocation("Kathmandu")
-            Log.d(TAG, "Using coordinates: lat=$latitude, lon=$longitude")
-            
+            getAirQuality(latitude, longitude)
+        }
+
+    override suspend fun getAirQuality(latitude: Double, longitude: Double): Result<AirQuality> =
+        safeApiCall {
+            Log.d(TAG, "Fetching air quality data for coordinates: lat=$latitude, lon=$longitude")
             val airQuality = airQualityApi.getAirQuality(
                 latitude = latitude,
                 longitude = longitude,
@@ -74,23 +82,14 @@ class WeatherRepository @Inject constructor(
         safeApiCall {
             Log.d(TAG, "Fetching weather and air quality data for location: $location")
             val (latitude, longitude) = getCoordinatesForLocation(location)
-            Log.d(TAG, "Using coordinates: lat=$latitude, lon=$longitude")
-            
-            val weather = weatherApi.getWeather(
-                latitude = latitude,
-                longitude = longitude,
-                apiKey = apiKey
-            ).toWeatherData().toDomainModel()
-            
-            Log.d(TAG, "Weather data received: $weather")
-            
-            val airQuality = airQualityApi.getAirQuality(
-                latitude = latitude,
-                longitude = longitude,
-                apiKey = apiKey
-            ).toAirQualityData().toDomainModel()
-            
-            Log.d(TAG, "Air quality data received: $airQuality")
+            getWeatherAndAirQuality(latitude, longitude)
+        }
+
+    override suspend fun getWeatherAndAirQuality(latitude: Double, longitude: Double): Result<Pair<DomainWeatherData, AirQuality>> =
+        safeApiCall {
+            Log.d(TAG, "Fetching weather and air quality data for coordinates: lat=$latitude, lon=$longitude")
+            val weather = getWeatherData(latitude, longitude).getOrThrow()
+            val airQuality = getAirQuality(latitude, longitude).getOrThrow()
             
             cachedWeather = weather
             cachedAirQuality = airQuality
@@ -111,7 +110,7 @@ class WeatherRepository @Inject constructor(
             humidity = humidity,
             description = description,
             location = location,
-            timestamp = timestamp
+            timestamp = System.currentTimeMillis()
         )
 
     private fun AirQualityData.toDomainModel(): AirQuality =
