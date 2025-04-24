@@ -11,8 +11,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.glance.appwidget.GlanceAppWidgetManager
-import com.example.nepalweatherwidget.data.repository.WeatherRepository
-import com.example.nepalweatherwidget.data.util.Result as WeatherResult
+import com.example.nepalweatherwidget.domain.repository.WeatherRepository
 import com.example.nepalweatherwidget.location.LocationService
 import com.example.nepalweatherwidget.widget.WeatherWidget
 import dagger.assisted.Assisted
@@ -20,6 +19,7 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
+import kotlin.Result
 
 @HiltWorker
 class WeatherUpdateWorker @AssistedInject constructor(
@@ -29,7 +29,7 @@ class WeatherUpdateWorker @AssistedInject constructor(
     private val locationService: LocationService
 ) : CoroutineWorker(appContext, workerParams) {
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+    override suspend fun doWork(): androidx.work.ListenableWorker.Result = withContext(Dispatchers.IO) {
         Log.d("WeatherUpdateWorker", "Starting background work...")
         try {
             val location = locationService.getLastLocation()
@@ -40,8 +40,8 @@ class WeatherUpdateWorker @AssistedInject constructor(
                     location.longitude
                 )
 
-                when (repoResult) {
-                    is WeatherResult.Success -> {
+                repoResult.fold(
+                    onSuccess = {
                         Log.d("WeatherUpdateWorker", "Successfully fetched weather data.")
                         // Update all widget instances
                         val widget = WeatherWidget(weatherRepository, locationService)
@@ -50,24 +50,20 @@ class WeatherUpdateWorker @AssistedInject constructor(
                         glanceIds.forEach { glanceId ->
                             widget.update(appContext, glanceId)
                         }
-                        Result.success()
+                        androidx.work.ListenableWorker.Result.success()
+                    },
+                    onFailure = { error ->
+                        Log.w("WeatherUpdateWorker", "Error fetching weather data: ${error.message}")
+                        androidx.work.ListenableWorker.Result.retry()
                     }
-                    is WeatherResult.Error -> {
-                        Log.w("WeatherUpdateWorker", "Error fetching weather data: ${repoResult.message}")
-                        Result.retry()
-                    }
-                    is WeatherResult.Loading -> {
-                        Log.d("WeatherUpdateWorker", "Weather data is loading, retrying later.")
-                        Result.retry()
-                    }
-                }
+                )
             } else {
                 Log.w("WeatherUpdateWorker", "Could not get location, retrying later.")
-                Result.retry()
+                androidx.work.ListenableWorker.Result.retry()
             }
         } catch (e: Exception) {
             Log.e("WeatherUpdateWorker", "Exception during work", e)
-            Result.failure()
+            androidx.work.ListenableWorker.Result.failure()
         }
     }
 

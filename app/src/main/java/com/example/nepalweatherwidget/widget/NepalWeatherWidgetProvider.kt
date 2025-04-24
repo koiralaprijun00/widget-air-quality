@@ -26,10 +26,9 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import com.example.nepalweatherwidget.data.model.AirQualityData
-import com.example.nepalweatherwidget.data.model.WeatherData
-import com.example.nepalweatherwidget.data.repository.WeatherRepository
-import com.example.nepalweatherwidget.data.util.Result
+import com.example.nepalweatherwidget.domain.model.AirQuality
+import com.example.nepalweatherwidget.domain.model.WeatherData
+import com.example.nepalweatherwidget.domain.repository.WeatherRepository
 import com.example.nepalweatherwidget.location.LocationService
 import com.example.nepalweatherwidget.worker.WeatherUpdateWorker
 import dagger.hilt.android.AndroidEntryPoint
@@ -37,10 +36,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
 import javax.inject.Inject
+import kotlin.Result
+
+sealed class WidgetState<out T> {
+    object Loading : WidgetState<Nothing>()
+    data class Success<T>(val data: T) : WidgetState<T>()
+    data class Error(val message: String) : WidgetState<Nothing>()
+}
 
 data class WeatherWidgetState(
     val location: Location? = null,
-    val weatherData: Result<Pair<WeatherData, AirQualityData>> = Result.Loading
+    val weatherData: WidgetState<Pair<WeatherData, AirQuality>> = WidgetState.Loading
 )
 
 // --- WeatherWidget is now a top-level class ---
@@ -67,20 +73,24 @@ class WeatherWidget(
                     location.longitude
                 )
                 Log.d("WeatherWidget", "Weather result: $weatherResult")
+                
                 WeatherWidgetState(
                     location = location,
-                    weatherData = weatherResult // Use injected repository
+                    weatherData = weatherResult.fold(
+                        onSuccess = { WidgetState.Success(it) },
+                        onFailure = { WidgetState.Error(it.message ?: "Unknown error") }
+                    )
                 )
             } else {
                 Log.w("WeatherWidget", "Location unavailable.")
                 WeatherWidgetState(
-                    weatherData = Result.Error("Location unavailable")
+                    weatherData = WidgetState.Error("Location unavailable")
                 )
             }
         } catch (e: Exception) {
             Log.e("WeatherWidget", "Failed to fetch weather data", e)
             WeatherWidgetState(
-                weatherData = Result.Error("Failed to fetch weather data: ${e.message}")
+                weatherData = WidgetState.Error("Failed to fetch weather data: ${e.message}")
             )
         }
 
@@ -122,13 +132,18 @@ class NepalWeatherWidgetProvider : GlanceAppWidgetReceiver() {
 @Composable
 private fun WeatherWidgetContent(
     location: Location?,
-    weatherState: Result<Pair<WeatherData, AirQualityData>>
+    weatherState: WidgetState<Pair<WeatherData, AirQuality>>
 ) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
             .defaultPadding()
-            .appWidgetBackground()
+            .background(
+                ColorProvider(
+                    Color(0xFFF5F5F5), // Light gray background
+                    Color(0xFF1A1A1A)  // Dark background for dark mode
+                )
+            )
             .cornerRadius(16.dp),
         verticalAlignment = Alignment.Top
     ) {
@@ -138,13 +153,13 @@ private fun WeatherWidgetContent(
         }
 
         when (weatherState) {
-            is Result.Success -> {
+            is WidgetState.Success -> {
                 WeatherContent(weatherState.data.first, weatherState.data.second)
             }
-            is Result.Error -> {
+            is WidgetState.Error -> {
                 ErrorContent(weatherState.message)
             }
-            is Result.Loading -> {
+            is WidgetState.Loading -> {
                 LoadingContent()
             }
         }
@@ -152,7 +167,7 @@ private fun WeatherWidgetContent(
 }
 
 @Composable
-private fun WeatherContent(weather: WeatherData, airQuality: AirQualityData) {
+private fun WeatherContent(weather: WeatherData, airQuality: AirQuality) {
     Column(
         modifier = GlanceModifier.fillMaxWidth(),
         horizontalAlignment = Alignment.Start
@@ -166,12 +181,12 @@ private fun WeatherContent(weather: WeatherData, airQuality: AirQualityData) {
                 text = weather.location,
                 style = TextStyle(
                     fontWeight = FontWeight.Medium,
-                    color = ColorProvider(Color.Black, Color.Black)
+                    color = ColorProvider(Color(0xFF000000), Color(0xFFFFFFFF))
                 )
             )
         }
 
-        Spacer(modifier = GlanceModifier.height(4.dp))
+        Spacer(modifier = GlanceModifier.height(8.dp))
 
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -182,7 +197,7 @@ private fun WeatherContent(weather: WeatherData, airQuality: AirQualityData) {
                 text = "${weather.temperature}°C",
                 style = TextStyle(
                     fontWeight = FontWeight.Bold,
-                    color = ColorProvider(Color.Black, Color.Black)
+                    color = ColorProvider(Color(0xFF000000), Color(0xFFFFFFFF))
                 )
             )
 
@@ -191,12 +206,12 @@ private fun WeatherContent(weather: WeatherData, airQuality: AirQualityData) {
             Text(
                 text = weather.description,
                 style = TextStyle(
-                    color = ColorProvider(Color.Black, Color.Black)
+                    color = ColorProvider(Color(0xFF000000), Color(0xFFFFFFFF))
                 )
             )
         }
 
-        Spacer(modifier = GlanceModifier.height(4.dp))
+        Spacer(modifier = GlanceModifier.height(8.dp))
 
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -204,18 +219,18 @@ private fun WeatherContent(weather: WeatherData, airQuality: AirQualityData) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "PM2.5: ${String.format(Locale.US, "%.1f", airQuality.pm25)}",
+                text = "AQI: ${airQuality.aqi}",
                 style = TextStyle(
-                    color = ColorProvider(Color.Black, Color.Black)
+                    color = ColorProvider(Color(0xFF000000), Color(0xFFFFFFFF))
                 )
             )
 
             Spacer(modifier = GlanceModifier.width(8.dp))
 
             Text(
-                text = "PM10: ${String.format(Locale.US, "%.1f", airQuality.pm10)}",
+                text = "PM2.5: ${airQuality.pm25}",
                 style = TextStyle(
-                    color = ColorProvider(Color.Black, Color.Black)
+                    color = ColorProvider(Color(0xFF000000), Color(0xFFFFFFFF))
                 )
             )
         }
@@ -232,13 +247,13 @@ private fun LocationUnavailableContent() {
         Text(
             text = "Location unavailable",
             style = TextStyle(
-                color = ColorProvider(Color.Black, Color.Black)
+                color = ColorProvider(Color(0xFF000000), Color(0xFFFFFFFF))
             )
         )
         Text(
             text = "Please enable location services",
             style = TextStyle(
-                color = ColorProvider(Color.Black, Color.Black)
+                color = ColorProvider(Color(0xFF000000), Color(0xFFFFFFFF))
             )
         )
     }
@@ -254,13 +269,13 @@ private fun ErrorContent(message: String) {
         Text(
             text = "Error",
             style = TextStyle(
-                color = ColorProvider(Color.Black, Color.Black)
+                color = ColorProvider(Color(0xFF000000), Color(0xFFFFFFFF))
             )
         )
         Text(
             text = message,
             style = TextStyle(
-                color = ColorProvider(Color.Black, Color.Black)
+                color = ColorProvider(Color(0xFF000000), Color(0xFFFFFFFF))
             )
         )
     }
@@ -276,7 +291,7 @@ private fun LoadingContent() {
         Text(
             text = "Loading...",
             style = TextStyle(
-                color = ColorProvider(Color.Black, Color.Black)
+                color = ColorProvider(Color(0xFF000000), Color(0xFFFFFFFF))
             )
         )
     }
