@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="24dp"
+    android:padding="16dp"
     android:background="@drawable/widget_background">
 
     <!-- Location and Temperature Section -->
@@ -12,9 +12,74 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="8dp">
+        android:layout_marginBottom="4dp">
 
-        <!-- Left: Location and Weather -->
+        <!-- Location Name -->
+        <TextView
+            android:id="@+id/location"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="#333333"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:text="Location" />
+
+        <!-- Temperature -->
+        <TextView
+            android:id="@+id/temperature"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#333333"
+            android:textSize="24sp"
+            android:text="25°C" />
+    </LinearLayout>
+
+    <!-- Primary Data Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="12dp">
+
+        <!-- AQI Value -->
+        <TextView
+            android:id="@+id/aqi_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#333333"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:text="51" />
+
+        <!-- AQI Description -->
+        <TextView
+            android:id="@+id/aqi_description"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="#666666"
+            android:textSize="20sp"
+            android:text="Moderate" />
+    </LinearLayout>
+
+    <!-- Weather Description -->
+    <TextView
+        android:id="@+id/weather_description"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:textColor="#666666"
+        android:textSize="16sp"
+        android:text="Partly Cloudy" />
+
+    <!-- Third Data Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- Wind Speed -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -22,56 +87,32 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/location"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFFFFF"
-                android:textSize="28sp"
-                android:textStyle="bold"
-                android:text="Kathmandu" />
+                android:textColor="#666666"
+                android:textSize="14sp"
+                android:text="Wind" />
 
             <TextView
-                android:id="@+id/weather_description"
+                android:id="@+id/wind_speed"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#E6FFFFFF"
-                android:textSize="18sp"
-                android:text="Partly Cloudy" />
+                android:textColor="#333333"
+                android:textSize="16sp"
+                android:text="3.5 m/s" />
         </LinearLayout>
-
-        <!-- Right: Temperature -->
-        <TextView
-            android:id="@+id/temperature"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#FFFFFF"
-            android:textSize="36sp"
-            android:textStyle="bold"
-            android:text="25°C" />
-    </LinearLayout>
-
-    <!-- Humidity and Wind Speed Section -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp">
 
         <!-- Humidity -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical"
-            android:background="#33FFFFFF"
-            android:padding="12dp"
-            android:layout_marginEnd="8dp">
+            android:orientation="vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#B3FFFFFF"
+                android:textColor="#666666"
                 android:textSize="14sp"
                 android:text="Humidity" />
 
@@ -79,92 +120,10 @@
                 android:id="@+id/humidity"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFFFFF"
-                android:textSize="24sp"
-                android:textStyle="bold"
+                android:textColor="#333333"
+                android:textSize="16sp"
                 android:text="65%" />
         </LinearLayout>
-
-        <!-- Wind Speed -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:background="#33FFFFFF"
-            android:padding="12dp"
-            android:layout_marginStart="8dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#B3FFFFFF"
-                android:textSize="14sp"
-                android:text="Wind Speed" />
-
-            <TextView
-                android:id="@+id/wind_speed"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#FFFFFF"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:text="3.5 m/s" />
-        </LinearLayout>
     </LinearLayout>
-
-    <!-- Air Quality Section -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:background="#33FFFFFF"
-        android:padding="12dp"
-        android:layout_marginBottom="16dp">
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#B3FFFFFF"
-                android:textSize="14sp"
-                android:text="Air Quality Index" />
-
-            <TextView
-                android:id="@+id/aqi_value"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#FFFFFF"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:text="85" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/aqi_circle"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@drawable/circle_background"
-            android:gravity="center"
-            android:textColor="#000000"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:text="85" />
-    </LinearLayout>
-
-    <!-- Last Updated -->
-    <TextView
-        android:id="@+id/last_updated"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="#B3FFFFFF"
-        android:textSize="12sp"
-        android:gravity="center"
-        android:text="Last updated: 11:33 PM" />
 
 </LinearLayout> 

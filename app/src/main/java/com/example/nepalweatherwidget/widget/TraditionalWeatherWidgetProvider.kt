@@ -11,19 +11,16 @@ import com.example.nepalweatherwidget.MainActivity
 import com.example.nepalweatherwidget.R
 import com.example.nepalweatherwidget.domain.usecase.GetWeatherUseCase
 import com.example.nepalweatherwidget.worker.WeatherUpdateWorker
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
-    private val TAG = "TraditionalWidget"
+    private val tag = "TraditionalWidget"
 
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        Log.d(TAG, "onUpdate called with ${appWidgetIds.size} widgets")
+        Log.d(tag, "onUpdate called with ${appWidgetIds.size} widgets")
         
         // Update each widget
         appWidgetIds.forEach { widgetId ->
@@ -33,32 +30,36 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
     
     private fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, widgetId: Int) {
         try {
-            Log.d(TAG, "Updating widget ID: $widgetId")
+            Log.d(tag, "Updating widget ID: $widgetId")
             
             // Get weather data
             val weatherData = GetWeatherUseCase.getMockWeatherData()
-            Log.d(TAG, "Got weather data: $weatherData")
+            Log.d(tag, "Got weather data: $weatherData")
             
             // Create a RemoteViews for the widget layout
             val views = RemoteViews(context.packageName, R.layout.widget_layout)
             
             // Set the weather data
             views.setTextViewText(R.id.location, weatherData.location)
-            views.setTextViewText(R.id.weather_description, weatherData.description)
             views.setTextViewText(R.id.temperature, "${weatherData.temperature}°C")
-            
-            // Set environmental data
+            views.setTextViewText(R.id.weather_description, weatherData.description)
             views.setTextViewText(R.id.humidity, "${weatherData.humidity}%")
             views.setTextViewText(R.id.wind_speed, "${weatherData.windSpeed} m/s")
             
-            // Set AQI data
-            views.setTextViewText(R.id.aqi_value, "85")
-            views.setTextViewText(R.id.aqi_circle, "85")
+            // Set AQI data and description
+            val aqiValue = getAirQualityIndex() // Get actual AQI value from data source
+            views.setTextViewText(R.id.aqi_value, aqiValue.toString())
             
-            // Set the last updated time
-            val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
-            val currentTime = sdf.format(Date(weatherData.timestamp))
-            views.setTextViewText(R.id.last_updated, "Last updated: $currentTime")
+            // Set AQI description based on value
+            val aqiDescription = when {
+                aqiValue <= 50 -> "Good"
+                aqiValue <= 100 -> "Moderate"
+                aqiValue <= 150 -> "Unhealthy for Sensitive Groups"
+                aqiValue <= 200 -> "Unhealthy"
+                aqiValue <= 300 -> "Very Unhealthy"
+                else -> "Hazardous"
+            }
+            views.setTextViewText(R.id.aqi_description, aqiDescription)
             
             // Set up click intent for the entire widget
             val intent = Intent(context, MainActivity::class.java)
@@ -72,26 +73,31 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
             
             // Update the widget
             appWidgetManager.updateAppWidget(widgetId, views)
-            Log.d(TAG, "Widget ID $widgetId updated successfully")
+            Log.d(tag, "Widget ID $widgetId updated successfully")
         } catch (e: Exception) {
-            Log.e(TAG, "Error updating widget ID $widgetId", e)
+            Log.e(tag, "Error updating widget ID $widgetId", e)
         }
     }
     
+    private fun getAirQualityIndex(): Int {
+        // TODO: Implement actual AQI data fetching
+        return 75 // Return a reasonable default value for now
+    }
+    
     override fun onEnabled(context: Context) {
-        Log.d(TAG, "Widget enabled for the first time")
+        Log.d(tag, "Widget enabled for the first time")
         // Start the update worker
         WeatherUpdateWorker.startPeriodicUpdate(context)
     }
     
     override fun onDisabled(context: Context) {
-        Log.d(TAG, "All widget instances removed")
+        Log.d(tag, "All widget instances removed")
         // Stop the update worker
         WeatherUpdateWorker.cancelPeriodicUpdate(context)
     }
     
     override fun onReceive(context: Context, intent: Intent) {
-        Log.d(TAG, "Received intent: ${intent.action}")
+        Log.d(tag, "Received intent: ${intent.action}")
         super.onReceive(context, intent)
     }
 } 
