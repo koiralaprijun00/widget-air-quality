@@ -27,10 +27,24 @@ class WeatherUpdateWorker(
             val widget = WeatherWidget()
             val manager = GlanceAppWidgetManager(appContext)
             val glanceIds = manager.getGlanceIds(WeatherWidget::class.java)
-            glanceIds.forEach { glanceId ->
-                widget.update(appContext, glanceId)
+            
+            Log.d("WeatherUpdateWorker", "Found ${glanceIds.size} widget instances to update")
+            
+            if (glanceIds.isEmpty()) {
+                Log.d("WeatherUpdateWorker", "No widgets found to update")
+                return@withContext androidx.work.ListenableWorker.Result.success()
             }
-            Log.d("WeatherUpdateWorker", "Successfully updated widgets.")
+            
+            glanceIds.forEach { glanceId ->
+                try {
+                    widget.update(appContext, glanceId)
+                    Log.d("WeatherUpdateWorker", "Successfully updated widget with ID: $glanceId")
+                } catch (e: Exception) {
+                    Log.e("WeatherUpdateWorker", "Failed to update widget with ID: $glanceId", e)
+                }
+            }
+            
+            Log.d("WeatherUpdateWorker", "Successfully updated all widgets")
             androidx.work.ListenableWorker.Result.success()
         } catch (e: Exception) {
             Log.e("WeatherUpdateWorker", "Failed to update widgets", e)

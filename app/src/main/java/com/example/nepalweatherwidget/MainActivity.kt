@@ -1,15 +1,19 @@
 package com.example.nepalweatherwidget
 
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import com.example.nepalweatherwidget.worker.WeatherUpdateWorker
 
 class MainActivity : AppCompatActivity() {
+    private val TAG = "MainActivity"
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        Log.d(TAG, "MainActivity created")
         
-        // Start the worker for widget updates
-        WeatherUpdateWorker.startPeriodicUpdate(applicationContext)
+        // Only set content view if this is a normal app launch
+        if (intent?.action == null) {
+            setContentView(R.layout.activity_main)
+        }
     }
 } 
