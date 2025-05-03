@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Nepal Weather Widget"
+rootProject.name = "Nepali Hawa"
 include ':app' 

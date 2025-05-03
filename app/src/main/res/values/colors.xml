@@ -1,5 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Primary Colors -->
+    <color name="primary">#4355FF</color>
+    <color name="primary_variant">#3546CC</color>
+    <color name="on_primary">#FFFFFF</color>
+    
+    <!-- Secondary Colors -->
+    <color name="secondary">#FFAB2E</color>
+    <color name="secondary_variant">#FF9100</color>
+    <color name="on_secondary">#000000</color>
+    
+    <!-- Background Colors -->
+    <color name="background">#F0F3F8</color>
+    <color name="on_background">#333333</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="on_surface">#333333</color>
+    <color name="surface_variant">#EEFFF7</color>
+    <color name="surface_variant_2">#FFF9EE</color>
+    
+    <!-- Status Colors -->
+    <color name="error">#D32F2F</color>
+    <color name="on_error">#FFFFFF</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#333333</color>
+    <color name="text_secondary">#666666</color>
+    <color name="text_tertiary">#888888</color>
+    <color name="text_hint">#BBBBBB</color>
+    
+    <!-- AQI Status Colors -->
+    <color name="aqi_good">#9BC53D</color>
+    <color name="aqi_moderate">#FFC857</color>
+    <color name="aqi_unhealthy_sensitive">#FF9F1C</color>
+    <color name="aqi_unhealthy">#E55934</color>
+    <color name="aqi_very_unhealthy">#BA324F</color>
+    <color name="aqi_hazardous">#702A8F</color>
+    
+    <!-- Legacy Colors (kept for backward compatibility) -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -17,11 +54,13 @@
     <color name="text_white">#FFFFFF</color>
     <color name="text_gray">#9E9E9E</color>
     <color name="text_light_gray">#BDBDBD</color>
-    <color name="aqi_good">#00E400</color>
     <color name="aqi_fair">#FFFF00</color>
-    <color name="aqi_moderate">#FF7E00</color>
     <color name="aqi_poor">#FF0000</color>
     <color name="aqi_very_poor">#8F3F97</color>
     <color name="error_red">#FF0000</color>
     <color name="colorPrimary">#1976D2</color>
-</resources> 
+    
+    <!-- Tab Colors -->
+    <color name="tab_selected">#FFFFFF</color>
+    <color name="tab_unselected">#B0B0FF</color>
+</resources>

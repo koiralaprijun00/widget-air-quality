@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Nepal Weather Widget</string>
+    <string name="app_name">Nepali Hawa</string>
     <string name="widget_description">Nepal Weather and Air Quality Widget</string>
     
     <!-- Weather Format Strings -->
@@ -52,4 +52,5 @@
     <string name="cd_weather_icon">Weather icon</string>
     <string name="cd_sunrise">Sunrise icon</string>
     <string name="cd_sunset">Sunset icon</string>
+    <string name="search">Search</string>
 </resources> 

@@ -11,6 +11,18 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Floating Action Button for Search -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_search"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="88dp"
+        android:contentDescription="@string/search"
+        app:srcCompat="@android:drawable/ic_menu_search"
+        app:tint="@android:color/white" />
+
     <!-- Bottom Navigation Bar -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_nav"
