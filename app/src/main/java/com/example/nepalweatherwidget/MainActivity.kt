@@ -17,14 +17,6 @@ class MainActivity : AppCompatActivity() {
                     loadFragment(DashboardFragment())
                     true
                 }
-                R.id.nav_trends -> {
-                    loadFragment(TrendsFragment())
-                    true
-                }
-                R.id.nav_about -> {
-                    loadFragment(AboutFragment())
-                    true
-                }
                 else -> false
             }
         }
