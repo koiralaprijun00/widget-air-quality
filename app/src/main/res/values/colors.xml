@@ -23,4 +23,5 @@
     <color name="aqi_poor">#FF0000</color>
     <color name="aqi_very_poor">#8F3F97</color>
     <color name="error_red">#FF0000</color>
+    <color name="colorPrimary">#1976D2</color>
 </resources> 
