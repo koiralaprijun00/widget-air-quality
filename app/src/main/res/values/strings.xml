@@ -45,6 +45,25 @@
     <string name="pressure">Pressure</string>
     <string name="sunrise_237">Sunrise: 2:37 AM</string>
     <string name="sunset_353">Sunset: 3:53 PM</string>
+    <string name="app_title">Air Quality &amp; Weather</string>
+    <string name="daily_forecast">Daily forecast</string>
+    <string name="tab_places">Places</string>
+    <string name="tab_devices">Devices</string>
+    <string name="us_aqi">US AQI</string>
+    <string name="aqi_value_56">56</string>
+    <string name="pm25">PM 2.5</string>
+    <string name="pm25_value">11.7 μg/m³</string>
+    <string name="temp_19">19°</string>
+    <string name="weather_clear_sky">Clear sky</string>
+    <string name="day_sun">Sun</string>
+    <string name="day_mon">Mon</string>
+    <string name="day_tue">Tue</string>
+    <string name="day_wed">Wed</string>
+    <string name="day_thu">Thu</string>
+    <string name="day_fri">Fri</string>
+    <string name="day_sat">Sat</string>
+    <string name="health_impact">Health Impact</string>
+    <string name="cd_forecast_graph">Forecast graph</string>
     
     <!-- Content Descriptions -->
     <string name="cd_refresh">Refresh icon</string>
