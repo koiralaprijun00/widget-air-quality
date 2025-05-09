@@ -1,75 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Nepali Hawa</string>
-    <string name="widget_description">Nepal Weather and Air Quality Widget</string>
+    <!-- Existing strings... -->
     
-    <!-- Weather Format Strings -->
-    <string name="temperature_format">%1$d°C</string>
-    <string name="humidity_format">%1$d%%</string>
-    <string name="wind_speed_format">%1$.1f m/s</string>
-    
-    <!-- AQI Messages -->
-    <string name="aqi_good">Good</string>
-    <string name="aqi_moderate">Moderate</string>
-    <string name="aqi_unhealthy_sensitive">Unhealthy for Sensitive Groups</string>
-    <string name="aqi_unhealthy">Unhealthy</string>
-    <string name="aqi_very_unhealthy">Very Unhealthy</string>
-    <string name="aqi_hazardous">Hazardous</string>
-    
-    <!-- AQI Health Messages -->
-    <string name="aqi_health_good">Air quality is satisfactory, and air pollution poses little or no risk.</string>
-    <string name="aqi_health_moderate">Air quality is acceptable; however, there may be a risk for some people.</string>
-    <string name="aqi_health_unhealthy_sensitive">Members of sensitive groups may experience health effects.</string>
-    <string name="aqi_health_unhealthy">Everyone may begin to experience health effects.</string>
-    <string name="aqi_health_very_unhealthy">Health warnings of emergency conditions.</string>
-    <string name="aqi_health_hazardous">Health alert: everyone may experience more serious health effects.</string>
-    
-    <!-- Dashboard Fragment Strings -->
-    <string name="location_kathmandu">Kathmandu, Nepal</string>
-    <string name="updated_less_than_minute">Updated less than a minute ago</string>
-    <string name="refresh">Refresh</string>
-    <string name="aqi_value_4">4</string>
-    <string name="aqi_status_unhealthy">Unhealthy</string>
-    <string name="aqi_advice_unhealthy">Everyone should reduce prolonged outdoor exertion</string>
-    <string name="aqi_health_message_sample">Some members of the general public may experience health effects; members of sensitive groups may experience more serious health effects.</string>
-    <string name="show_pollutant_details">Show Pollutant Details</string>
-    <string name="current_weather">Current Weather</string>
-    <string name="temp_22">22°C</string>
-    <string name="weather_broken_clouds">Broken clouds</string>
-    <string name="feels_like_22">Feels like 22°C</string>
-    <string name="wind_4_6">4.6 m/s</string>
-    <string name="wind">Wind</string>
-    <string name="humidity_64">64%</string>
-    <string name="humidity">Humidity</string>
-    <string name="pressure_1008">1008 hPa</string>
-    <string name="pressure">Pressure</string>
-    <string name="sunrise_237">Sunrise: 2:37 AM</string>
-    <string name="sunset_353">Sunset: 3:53 PM</string>
-    <string name="app_title">Air Quality &amp; Weather</string>
-    <string name="daily_forecast">Daily forecast</string>
-    <string name="tab_places">Places</string>
-    <string name="tab_devices">Devices</string>
-    <string name="us_aqi">US AQI</string>
-    <string name="aqi_value_56">56</string>
-    <string name="pm25">PM 2.5</string>
-    <string name="pm25_value">11.7 μg/m³</string>
-    <string name="temp_19">19°</string>
-    <string name="weather_clear_sky">Clear sky</string>
-    <string name="day_sun">Sun</string>
-    <string name="day_mon">Mon</string>
-    <string name="day_tue">Tue</string>
-    <string name="day_wed">Wed</string>
-    <string name="day_thu">Thu</string>
-    <string name="day_fri">Fri</string>
-    <string name="day_sat">Sat</string>
-    <string name="health_impact">Health Impact</string>
-    <string name="cd_forecast_graph">Forecast graph</string>
-    
-    <!-- Content Descriptions -->
-    <string name="cd_refresh">Refresh icon</string>
-    <string name="cd_aqi_alert">AQI alert icon</string>
-    <string name="cd_weather_icon">Weather icon</string>
-    <string name="cd_sunrise">Sunrise icon</string>
-    <string name="cd_sunset">Sunset icon</string>
-    <string name="search">Search</string>
-</resources> 
+    <!-- New strings for loading and error states -->
+    <string name="loading_weather">Fetching weather data…</string>
+    <string name="error_loading_weather">Unable to load weather data</string>
+    <string name="error_unknown">An unknown error occurred</string>
+    <string name="retry">Retry</string>
+</resources>
