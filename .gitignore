@@ -18,7 +18,6 @@ out/
 # Gradle files
 .gradle/
 build/
-!gradle/wrapper/gradle-wrapper.jar
 
 # Local configuration file (sdk path, etc)
 local.properties
@@ -35,28 +34,6 @@ captures/
 # IntelliJ
 *.iml
 .idea/
-.idea/workspace.xml
-.idea/tasks.xml
-.idea/gradle.xml
-.idea/assetWizardSettings.xml
-.idea/dictionaries
-.idea/libraries
-.idea/caches
-.idea/modules.xml
-.idea/.name
-.idea/compiler.xml
-.idea/copyright/profiles_settings.xml
-.idea/encodings.xml
-.idea/misc.xml
-.idea/scopes/scope_settings.xml
-.idea/vcs.xml
-.idea/jsLibraryMappings.xml
-.idea/datasources.xml
-.idea/dataSources.ids
-.idea/sqlDataSources.xml
-.idea/dynamic.xml
-.idea/uiDesigner.xml
-.idea/jarRepositories.xml
 
 # Keystore files
 *.jks
@@ -78,21 +55,8 @@ lint/generated/
 lint/outputs/
 lint/tmp/
 
-# Android Profiling
-*.hprof
-
-# macOS
+# MacOS
 .DS_Store
-.AppleDouble
-.LSOverride
 
 # Windows
 Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# Linux
-*~
-
-# Kotlin
-*.kotlin_module 
