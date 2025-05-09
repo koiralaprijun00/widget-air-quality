@@ -7,4 +7,71 @@
     <string name="error_loading_weather">Unable to load weather data</string>
     <string name="error_unknown">An unknown error occurred</string>
     <string name="retry">Retry</string>
+
+    <string name="app_name">Air Quality Widget</string>
+    
+    <!-- Widget -->
+    <string name="widget_description">Shows current air quality information</string>
+    
+    <!-- Search -->
+    <string name="search">Search</string>
+    
+    <!-- Location -->
+    <string name="location_name">Kathmandu</string>
+    <string name="location_subtitle">Birmingham</string>
+    
+    <!-- Location Names -->
+    <string name="location_lalitpur">Lalitpur</string>
+    <string name="location_pokhara">Pokhara</string>
+    <string name="location_edmund_street">Edmund Street</string>
+    <string name="location_berkley_street">Berkley Street</string>
+    
+    <!-- Weather -->
+    <string name="weather_icon_description">Weather icon</string>
+    <string name="weather_temperature">19°C</string>
+    <string name="weather_description">Rain Shower</string>
+    <string name="temperature_format">%d°C</string>
+    <string name="feels_like_22">Feels like 22°C</string>
+    
+    <!-- AQI -->
+    <string name="aqi_value">185</string>
+    <string name="aqi_label">AQI</string>
+    <string name="aqi_description">Unhealthy for Sensitive Groups</string>
+    <string name="aqi_range_text">Air Quality Index Range</string>
+    <string name="aqi_info_icon_description">Information about AQI</string>
+    
+    <!-- AQI Status -->
+    <string name="aqi_good">Good</string>
+    <string name="aqi_moderate">Moderate</string>
+    <string name="aqi_unhealthy_sensitive">Unhealthy for Sensitive Groups</string>
+    <string name="aqi_unhealthy">Unhealthy</string>
+    <string name="aqi_very_unhealthy">Very Unhealthy</string>
+    <string name="aqi_hazardous">Hazardous</string>
+    
+    <!-- AQI Advice -->
+    <string name="aqi_advice_unhealthy">Take precautions</string>
+    
+    <!-- AQI Health Messages -->
+    <string name="aqi_health_good">Air quality is good</string>
+    <string name="aqi_health_moderate">Air quality is acceptable</string>
+    <string name="aqi_health_unhealthy_sensitive">Members of sensitive groups may experience health effects</string>
+    <string name="aqi_health_unhealthy">Everyone may experience health effects</string>
+    <string name="aqi_health_very_unhealthy">Health alert: everyone may experience serious health effects</string>
+    <string name="aqi_health_hazardous">Health warning: everyone may experience severe health effects</string>
+    
+    <!-- Health Advice -->
+    <string name="health_advice_title">Health Advice</string>
+    <string name="health_advice_text">Members of sensitive groups may experience health effects. The general public is less likely to be affected.</string>
+    
+    <!-- Forecast -->
+    <string name="forecast_title">Forecast</string>
+    
+    <!-- Other Locations -->
+    <string name="other_locations_title">Other Locations</string>
+    
+    <!-- Map -->
+    <string name="map_placeholder">[Map View Placeholder]</string>
+    
+    <!-- Navigation -->
+    <string name="next_icon_description">Next</string>
 </resources>

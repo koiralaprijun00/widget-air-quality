@@ -2,6 +2,8 @@
 <resources>
     <!-- Primary Colors -->
     <color name="primary">#4355FF</color>
+    <color name="primary_dark">#3546CC</color>
+    <color name="accent">#FFAB2E</color>
     <color name="primary_variant">#3546CC</color>
     <color name="on_primary">#FFFFFF</color>
     
