@@ -17,6 +17,14 @@ class MainActivity : AppCompatActivity() {
                     loadFragment(DashboardFragment())
                     true
                 }
+                R.id.nav_map -> {
+                    loadFragment(MapFragment())
+                    true
+                }
+                R.id.nav_locations -> {
+                    loadFragment(LocationsFragment())
+                    true
+                }
                 else -> false
             }
         }

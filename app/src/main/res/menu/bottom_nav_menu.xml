@@ -4,4 +4,12 @@
         android:id="@+id/nav_dashboard"
         android:icon="@drawable/ic_home"
         android:title="Dashboard" />
+    <item
+        android:id="@+id/nav_map"
+        android:icon="@drawable/ic_map"
+        android:title="Map" />
+    <item
+        android:id="@+id/nav_locations"
+        android:icon="@drawable/ic_locations"
+        android:title="Locations" />
 </menu> 
