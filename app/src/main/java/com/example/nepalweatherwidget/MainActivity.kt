@@ -23,6 +23,14 @@ class MainActivity : AppCompatActivity(), SearchFragment.SearchListener {
                     fabSearch.show()
                     true
                 }
+                R.id.nav_map -> {
+                    loadFragment(MapFragment())
+                    true
+                }
+                R.id.nav_locations -> {
+                    loadFragment(LocationsFragment())
+                    true
+                }
                 else -> false
             }
         }
