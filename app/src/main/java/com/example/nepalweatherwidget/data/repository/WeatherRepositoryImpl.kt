@@ -115,28 +115,85 @@ class WeatherRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getForecast(locationName: String, days: Int): Result<List<WeatherData>> {
-        // TODO: Implement forecast fetching
-        return Result.Error(WeatherException.DataException.NoDataAvailable)
+        return try {
+            if (!networkMonitor.isNetworkAvailable()) {
+                return Result.Error(WeatherException.NetworkException.NoInternet)
+            }
+
+            // Get coordinates for location
+            val locationResult = geocodingRepository.getLocationByName(locationName)
+            return when (locationResult) {
+                is Result.Success -> {
+                    val location = locationResult.data
+                    getForecastByCoordinates(location.latitude, location.longitude, days)
+                }
+                is Result.Error -> locationResult
+            }
+        } catch (e: Exception) {
+            errorHandler.handleError(e)
+        }
     }
     
     override suspend fun getForecastByCoordinates(lat: Double, lon: Double, days: Int): Result<List<WeatherData>> {
-        // TODO: Implement forecast fetching by coordinates
-        return Result.Error(WeatherException.DataException.NoDataAvailable)
+        return try {
+            if (!networkMonitor.isNetworkAvailable()) {
+                return Result.Error(WeatherException.NetworkException.NoInternet)
+            }
+
+            val response = withNetworkRetry {
+                weatherService.getForecast(lat, lon, apiKey)
+            }
+
+            val forecastData = response.list.map { forecastItem ->
+                WeatherData(
+                    temperature = forecastItem.main.temp,
+                    feelsLike = forecastItem.main.feelsLike,
+                    description = forecastItem.weather.firstOrNull()?.description ?: "",
+                    iconCode = forecastItem.weather.firstOrNull()?.icon ?: "",
+                    humidity = forecastItem.main.humidity,
+                    windSpeed = forecastItem.wind.speed,
+                    timestamp = forecastItem.dt * 1000 // Convert to milliseconds
+                )
+            }
+
+            Result.Success(forecastData)
+        } catch (e: Exception) {
+            errorHandler.handleError(e)
+        }
     }
     
     override suspend fun getSavedLocations(): Result<List<Location>> {
-        // TODO: Implement saved locations
-        return Result.Success(emptyList())
+        return try {
+            val locations = weatherDao.getSavedLocations().first()
+            Result.Success(locations.map { it.toLocation() })
+        } catch (e: Exception) {
+            errorHandler.handleError(e)
+        }
     }
     
     override suspend fun saveLocation(location: Location): Result<Location> {
-        // TODO: Implement location saving
-        return Result.Success(location)
+        return try {
+            val locationEntity = LocationEntity(
+                id = location.id,
+                name = location.name,
+                latitude = location.latitude,
+                longitude = location.longitude,
+                timestamp = System.currentTimeMillis()
+            )
+            weatherDao.insertLocation(locationEntity)
+            Result.Success(location)
+        } catch (e: Exception) {
+            errorHandler.handleError(e)
+        }
     }
     
     override suspend fun deleteLocation(locationId: String): Result<Unit> {
-        // TODO: Implement location deletion
-        return Result.Success(Unit)
+        return try {
+            weatherDao.deleteLocation(locationId)
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            errorHandler.handleError(e)
+        }
     }
     
     override suspend fun clearCache(): Result<Unit> {

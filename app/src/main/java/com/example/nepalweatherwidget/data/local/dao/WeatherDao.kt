@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.example.nepalweatherwidget.data.local.entity.WeatherEntity
+import com.example.nepalweatherwidget.data.local.entity.LocationEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -23,4 +24,14 @@ interface WeatherDao {
 
     @Query("SELECT * FROM weather_data WHERE timestamp > :timestamp")
     fun getRecentWeatherData(timestamp: Long): Flow<List<WeatherEntity>>
+
+    // Location-related methods
+    @Query("SELECT * FROM saved_locations ORDER BY timestamp DESC")
+    fun getSavedLocations(): Flow<List<LocationEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLocation(location: LocationEntity)
+
+    @Query("DELETE FROM saved_locations WHERE id = :locationId")
+    suspend fun deleteLocation(locationId: String)
 } 

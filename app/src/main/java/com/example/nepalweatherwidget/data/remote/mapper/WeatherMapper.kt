@@ -12,7 +12,13 @@ fun WeatherResponse.toWeatherData(): WeatherData {
         iconCode = weather.firstOrNull()?.icon ?: "",
         humidity = main.humidity,
         windSpeed = wind.speed,
-        timestamp = timestamp
+        timestamp = timestamp,
+        location = name,
+        pressure = main.pressure,
+        visibility = visibility,
+        cloudiness = clouds.all,
+        sunrise = sys.sunrise,
+        sunset = sys.sunset
     )
 }
 
@@ -37,6 +43,7 @@ fun WeatherEntity.toWeatherData(): WeatherData {
         iconCode = iconCode,
         humidity = humidity,
         windSpeed = windSpeed,
-        timestamp = timestamp
+        timestamp = timestamp,
+        location = location
     )
 } 

@@ -14,7 +14,13 @@ data class WeatherResponse(
     @SerializedName("name")
     val name: String,
     @SerializedName("dt")
-    val timestamp: Long
+    val timestamp: Long,
+    @SerializedName("sys")
+    val sys: Sys,
+    @SerializedName("visibility")
+    val visibility: Int,
+    @SerializedName("clouds")
+    val clouds: Clouds
 ) {
     data class Coordinates(
         @SerializedName("lat")
@@ -54,5 +60,17 @@ data class WeatherResponse(
         val speed: Double,
         @SerializedName("deg")
         val degree: Int
+    )
+
+    data class Sys(
+        @SerializedName("sunrise")
+        val sunrise: Long,
+        @SerializedName("sunset")
+        val sunset: Long
+    )
+
+    data class Clouds(
+        @SerializedName("all")
+        val all: Int
     )
 } 
