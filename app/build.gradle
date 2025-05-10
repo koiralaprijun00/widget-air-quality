@@ -22,8 +22,19 @@ android {
         versionCode 1
         versionName "1.0"
         
-        // Load API key from secrets.properties
+        // API Configuration
         buildConfigField "String", "OPENWEATHER_API_KEY", "\"${secrets.getProperty('openweather_api_key', '')}\""
+        buildConfigField "String", "OPENWEATHER_API_BASE_URL", "\"https://api.openweathermap.org/data/2.5/\""
+        buildConfigField "String", "OPENWEATHER_ICON_BASE_URL", "\"https://openweathermap.org/img/wn/\""
+        buildConfigField "String", "OPENWEATHER_ICON_SIZE", "\"@2x\""
+        
+        // App Configuration
+        buildConfigField "String", "DEFAULT_LOCATION", "\"Kathmandu\""
+        buildConfigField "int", "WEATHER_UPDATE_INTERVAL_MINUTES", "30"
+        buildConfigField "int", "WIDGET_UPDATE_INTERVAL_MINUTES", "15"
+        buildConfigField "int", "CACHE_DURATION_MINUTES", "60"
+        buildConfigField "int", "MAX_RETRY_ATTEMPTS", "3"
+        buildConfigField "int", "RETRY_DELAY_SECONDS", "5"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
