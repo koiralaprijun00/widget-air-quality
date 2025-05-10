@@ -5,7 +5,6 @@ import com.example.nepalweatherwidget.data.api.AirPollutionService
 import com.example.nepalweatherwidget.domain.model.WeatherData
 import com.example.nepalweatherwidget.domain.model.AirQuality
 import com.example.nepalweatherwidget.domain.repository.WeatherRepository
-import com.example.nepalweatherwidget.R
 import javax.inject.Inject
 
 class WeatherRepositoryImpl @Inject constructor(
@@ -15,8 +14,7 @@ class WeatherRepositoryImpl @Inject constructor(
     
     override suspend fun getWeatherAndAirQuality(location: String): Result<Pair<WeatherData, AirQuality>> {
         return try {
-            // For now, use hardcoded coordinates for Kathmandu
-            // In a real app, you would geocode the location string
+            // Add proper geocoding here
             val lat = 27.7172
             val lon = 85.3240
             
@@ -31,15 +29,108 @@ class WeatherRepositoryImpl @Inject constructor(
                 windSpeed = weatherResponse.wind.speed
             )
             
-            val airQualityData = airQualityResponse.list.firstOrNull()?.let { aqData ->
-                AirQuality(
-                    aqi = aqData.main.aqi,
-                    pm25 = aqData.components.pm2_5,
-                    pm10 = aqData.components.pm10
-                )
-            } ?: throw Exception("No air quality data available")
+            val airQuality = AirQuality(
+                aqi = airQualityResponse.list.firstOrNull()?.main?.aqi ?: 0,
+                pm25 = airQualityResponse.list.firstOrNull()?.components?.pm2_5 ?: 0.0,
+                pm10 = airQualityResponse.list.firstOrNull()?.components?.pm10 ?: 0.0
+            )
             
-            Result.success(Pair(weatherData, airQualityData))
+            Result.success(Pair(weatherData, airQuality))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getWeatherData(location: String): Result<WeatherData> {
+        return try {
+            val lat = 27.7172
+            val lon = 85.3240
+            
+            val weatherResponse = weatherService.getCurrentWeather(lat, lon)
+            val weatherData = WeatherData(
+                temperature = weatherResponse.main.temp,
+                humidity = weatherResponse.main.humidity,
+                description = weatherResponse.weather.firstOrNull()?.description ?: "",
+                location = weatherResponse.name,
+                windSpeed = weatherResponse.wind.speed
+            )
+            
+            Result.success(weatherData)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getWeatherData(latitude: Double, longitude: Double): Result<WeatherData> {
+        return try {
+            val weatherResponse = weatherService.getCurrentWeather(latitude, longitude)
+            val weatherData = WeatherData(
+                temperature = weatherResponse.main.temp,
+                humidity = weatherResponse.main.humidity,
+                description = weatherResponse.weather.firstOrNull()?.description ?: "",
+                location = weatherResponse.name,
+                windSpeed = weatherResponse.wind.speed
+            )
+            
+            Result.success(weatherData)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getAirQuality(): Result<AirQuality> {
+        return try {
+            val lat = 27.7172
+            val lon = 85.3240
+            
+            val airQualityResponse = airPollutionService.getCurrentAirQuality(lat, lon)
+            val airQuality = AirQuality(
+                aqi = airQualityResponse.list.firstOrNull()?.main?.aqi ?: 0,
+                pm25 = airQualityResponse.list.firstOrNull()?.components?.pm2_5 ?: 0.0,
+                pm10 = airQualityResponse.list.firstOrNull()?.components?.pm10 ?: 0.0
+            )
+            
+            Result.success(airQuality)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getAirQuality(latitude: Double, longitude: Double): Result<AirQuality> {
+        return try {
+            val airQualityResponse = airPollutionService.getCurrentAirQuality(latitude, longitude)
+            val airQuality = AirQuality(
+                aqi = airQualityResponse.list.firstOrNull()?.main?.aqi ?: 0,
+                pm25 = airQualityResponse.list.firstOrNull()?.components?.pm2_5 ?: 0.0,
+                pm10 = airQualityResponse.list.firstOrNull()?.components?.pm10 ?: 0.0
+            )
+            
+            Result.success(airQuality)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getWeatherAndAirQuality(latitude: Double, longitude: Double): Result<Pair<WeatherData, AirQuality>> {
+        return try {
+            val weatherResponse = weatherService.getCurrentWeather(latitude, longitude)
+            val airQualityResponse = airPollutionService.getCurrentAirQuality(latitude, longitude)
+            
+            val weatherData = WeatherData(
+                temperature = weatherResponse.main.temp,
+                humidity = weatherResponse.main.humidity,
+                description = weatherResponse.weather.firstOrNull()?.description ?: "",
+                location = weatherResponse.name,
+                windSpeed = weatherResponse.wind.speed
+            )
+            
+            val airQuality = AirQuality(
+                aqi = airQualityResponse.list.firstOrNull()?.main?.aqi ?: 0,
+                pm25 = airQualityResponse.list.firstOrNull()?.components?.pm2_5 ?: 0.0,
+                pm10 = airQualityResponse.list.firstOrNull()?.components?.pm10 ?: 0.0
+            )
+            
+            Result.success(Pair(weatherData, airQuality))
         } catch (e: Exception) {
             Result.failure(e)
         }

@@ -15,6 +15,7 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
+        buildConfigField "String", "OPENWEATHER_API_KEY", "\"a084f03dedc3e73373fdbcd8e6452d22\""
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -35,6 +36,7 @@ android {
     buildFeatures {
         compose true
         viewBinding true
+        buildConfig true
     }
     composeOptions {
         kotlinCompilerExtensionVersion "1.5.1"
