@@ -15,6 +15,7 @@ import com.example.nepalweatherwidget.data.local.entity.WeatherEntity
 import com.example.nepalweatherwidget.data.local.entity.AirQualityEntity
 import com.example.nepalweatherwidget.domain.model.WeatherData
 import com.example.nepalweatherwidget.domain.model.AirQuality
+import com.example.nepalweatherwidget.domain.model.Location
 import com.example.nepalweatherwidget.domain.repository.WeatherRepository
 import com.example.nepalweatherwidget.domain.repository.GeocodingRepository
 import kotlinx.coroutines.flow.Flow
@@ -24,165 +25,288 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
-import com.example.nepalweatherwidget.data.api.WeatherApi
-import com.example.nepalweatherwidget.data.cache.WeatherCache
-import com.example.nepalweatherwidget.data.mapper.toAirQuality
-import com.example.nepalweatherwidget.data.mapper.toWeatherData
-import com.example.nepalweatherwidget.domain.model.Location
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlin.time.Duration.Companion.minutes
 
 @Singleton
 class WeatherRepositoryImpl @Inject constructor(
-    private val api: WeatherApi,
-    private val cache: WeatherCache
+    private val weatherService: WeatherService,
+    private val airPollutionService: AirPollutionService,
+    private val weatherDao: WeatherDao,
+    private val airQualityDao: AirQualityDao,
+    private val geocodingRepository: GeocodingRepository,
+    private val networkMonitor: NetworkMonitor,
+    private val errorHandler: ErrorHandler,
+    private val weatherCache: WeatherCache,
+    @Named("openweather_api_key") private val apiKey: String
 ) : WeatherRepository {
     
-    override suspend fun getWeatherData(locationName: String): Result<WeatherData> = withContext(Dispatchers.IO) {
-        try {
-            // Try to get from cache first
-            cache.getWeatherData(locationName)?.let {
-                return@withContext Result.success(it)
-            }
-
-            // If not in cache, fetch from API
-            val response = api.getWeatherData(locationName)
-            val weatherData = response.toWeatherData()
-            
-            // Cache the result
-            cache.cacheWeatherData(locationName, weatherData)
-            
-            Result.success(weatherData)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    companion object {
+        private const val TAG = "WeatherRepository"
+        private val CACHE_VALIDITY = 30.minutes
+        private const val CACHE_STALE_THRESHOLD_HOURS = 2L
     }
-
-    override suspend fun getAirQuality(locationName: String): Result<AirQuality> = withContext(Dispatchers.IO) {
-        try {
-            // Try to get from cache first
-            cache.getAirQuality(locationName)?.let {
-                return@withContext Result.success(it)
-            }
-
-            // If not in cache, fetch from API
-            val response = api.getAirQuality(locationName)
-            val airQuality = response.toAirQuality()
-            
-            // Cache the result
-            cache.cacheAirQuality(locationName, airQuality)
-            
-            Result.success(airQuality)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    
+    override suspend fun getWeatherData(locationName: String): Result<WeatherData> {
+        return weatherCache.getOrFetch(
+            key = "weather_$locationName",
+            validity = CACHE_VALIDITY,
+            fetcher = { fetchWeatherData(locationName) }
+        )
     }
-
-    override suspend fun getWeatherAndAirQuality(locationName: String): Result<Pair<WeatherData, AirQuality>> = 
-        withContext(Dispatchers.IO) {
-            try {
-                val weatherResult = getWeatherData(locationName)
-                val airQualityResult = getAirQuality(locationName)
-
-                if (weatherResult.isSuccess && airQualityResult.isSuccess) {
-                    Result.success(Pair(weatherResult.getOrNull()!!, airQualityResult.getOrNull()!!))
-                } else {
-                    Result.failure(Exception("Failed to get weather and air quality data"))
+    
+    override suspend fun getAirQuality(locationName: String): Result<AirQuality> {
+        return weatherCache.getOrFetch(
+            key = "air_quality_$locationName",
+            validity = CACHE_VALIDITY,
+            fetcher = { fetchAirQuality(locationName) }
+        )
+    }
+    
+    override suspend fun getWeatherAndAirQuality(locationName: String): Result<Pair<WeatherData, AirQuality>> {
+        return try {
+            val weatherResult = getWeatherData(locationName)
+            val airQualityResult = getAirQuality(locationName)
+            
+            when {
+                weatherResult is Result.Success && airQualityResult is Result.Success -> {
+                    Result.Success(Pair(weatherResult.data, airQualityResult.data))
                 }
-            } catch (e: Exception) {
-                Result.failure(e)
+                weatherResult is Result.Error -> weatherResult
+                airQualityResult is Result.Error -> airQualityResult
+                else -> Result.Error(WeatherException.UnknownError())
             }
+        } catch (e: Exception) {
+            errorHandler.handleError(e)
         }
-
-    override suspend fun getWeatherDataByCoordinates(lat: Double, lon: Double): Result<WeatherData> = 
-        withContext(Dispatchers.IO) {
-            try {
-                val response = api.getWeatherDataByCoordinates(lat, lon)
-                Result.success(response.toWeatherData())
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-
-    override suspend fun getAirQualityByCoordinates(lat: Double, lon: Double): Result<AirQuality> = 
-        withContext(Dispatchers.IO) {
-            try {
-                val response = api.getAirQualityByCoordinates(lat, lon)
-                Result.success(response.toAirQuality())
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-
-    override suspend fun getWeatherAndAirQualityByCoordinates(lat: Double, lon: Double): Result<Pair<WeatherData, AirQuality>> = 
-        withContext(Dispatchers.IO) {
-            try {
-                val weatherResult = getWeatherDataByCoordinates(lat, lon)
-                val airQualityResult = getAirQualityByCoordinates(lat, lon)
-
-                if (weatherResult.isSuccess && airQualityResult.isSuccess) {
-                    Result.success(Pair(weatherResult.getOrNull()!!, airQualityResult.getOrNull()!!))
-                } else {
-                    Result.failure(Exception("Failed to get weather and air quality data"))
+    }
+    
+    override suspend fun getWeatherDataByCoordinates(lat: Double, lon: Double): Result<WeatherData> {
+        return weatherCache.getOrFetch(
+            key = "weather_coords_${lat}_${lon}",
+            validity = CACHE_VALIDITY,
+            fetcher = { fetchWeatherDataByCoordinates(lat, lon) }
+        )
+    }
+    
+    override suspend fun getAirQualityByCoordinates(lat: Double, lon: Double): Result<AirQuality> {
+        return weatherCache.getOrFetch(
+            key = "air_quality_coords_${lat}_${lon}",
+            validity = CACHE_VALIDITY,
+            fetcher = { fetchAirQualityByCoordinates(lat, lon) }
+        )
+    }
+    
+    override suspend fun getWeatherAndAirQualityByCoordinates(lat: Double, lon: Double): Result<Pair<WeatherData, AirQuality>> {
+        return try {
+            val weatherResult = getWeatherDataByCoordinates(lat, lon)
+            val airQualityResult = getAirQualityByCoordinates(lat, lon)
+            
+            when {
+                weatherResult is Result.Success && airQualityResult is Result.Success -> {
+                    Result.Success(Pair(weatherResult.data, airQualityResult.data))
                 }
-            } catch (e: Exception) {
-                Result.failure(e)
+                weatherResult is Result.Error -> weatherResult
+                airQualityResult is Result.Error -> airQualityResult
+                else -> Result.Error(WeatherException.UnknownError())
             }
-        }
-
-    override suspend fun getForecast(locationName: String, days: Int): Result<List<WeatherData>> = 
-        withContext(Dispatchers.IO) {
-            try {
-                val response = api.getForecast(locationName, days)
-                Result.success(response.map { it.toWeatherData() })
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-
-    override suspend fun getForecastByCoordinates(lat: Double, lon: Double, days: Int): Result<List<WeatherData>> = 
-        withContext(Dispatchers.IO) {
-            try {
-                val response = api.getForecastByCoordinates(lat, lon, days)
-                Result.success(response.map { it.toWeatherData() })
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-
-    override suspend fun getSavedLocations(): Result<List<Location>> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(cache.getSavedLocations())
         } catch (e: Exception) {
-            Result.failure(e)
+            errorHandler.handleError(e)
         }
     }
-
-    override suspend fun saveLocation(location: Location): Result<Location> = withContext(Dispatchers.IO) {
-        try {
-            cache.saveLocation(location)
-            Result.success(location)
+    
+    override suspend fun getForecast(locationName: String, days: Int): Result<List<WeatherData>> {
+        // TODO: Implement forecast fetching
+        return Result.Error(WeatherException.DataException.NoDataAvailable)
+    }
+    
+    override suspend fun getForecastByCoordinates(lat: Double, lon: Double, days: Int): Result<List<WeatherData>> {
+        // TODO: Implement forecast fetching by coordinates
+        return Result.Error(WeatherException.DataException.NoDataAvailable)
+    }
+    
+    override suspend fun getSavedLocations(): Result<List<Location>> {
+        // TODO: Implement saved locations
+        return Result.Success(emptyList())
+    }
+    
+    override suspend fun saveLocation(location: Location): Result<Location> {
+        // TODO: Implement location saving
+        return Result.Success(location)
+    }
+    
+    override suspend fun deleteLocation(locationId: String): Result<Unit> {
+        // TODO: Implement location deletion
+        return Result.Success(Unit)
+    }
+    
+    override suspend fun clearCache(): Result<Unit> {
+        return try {
+            weatherCache.invalidateAll()
+            Result.Success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            errorHandler.handleError(e)
         }
     }
-
-    override suspend fun deleteLocation(locationId: String): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            cache.deleteLocation(locationId)
-            Result.success(Unit)
+    
+    // Private helper methods
+    private suspend fun fetchWeatherData(locationName: String): Result<WeatherData> {
+        return try {
+            if (!networkMonitor.isNetworkAvailable()) {
+                return tryGetCachedData(locationName) ?: Result.Error(WeatherException.NetworkException.NoInternet)
+            }
+            
+            // Get coordinates for location
+            val locationResult = geocodingRepository.getLocationByName(locationName)
+            return when (locationResult) {
+                is Result.Success -> {
+                    val location = locationResult.data
+                    fetchWeatherDataByCoordinates(location.latitude, location.longitude)
+                }
+                is Result.Error -> locationResult
+            }
         } catch (e: Exception) {
-            Result.failure(e)
+            errorHandler.handleError(e)
         }
     }
-
-    override suspend fun clearCache(): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            cache.clear()
-            Result.success(Unit)
+    
+    private suspend fun fetchWeatherDataByCoordinates(lat: Double, lon: Double): Result<WeatherData> {
+        return try {
+            val response = withNetworkRetry {
+                weatherService.getCurrentWeather(lat, lon, apiKey)
+            }
+            
+            val weatherData = WeatherData(
+                temperature = response.main.temp,
+                feelsLike = response.main.feelsLike,
+                description = response.weather.firstOrNull()?.description ?: "",
+                iconCode = response.weather.firstOrNull()?.icon ?: "",
+                humidity = response.main.humidity,
+                windSpeed = response.wind.speed,
+                timestamp = response.timestamp * 1000 // Convert to milliseconds
+            )
+            
+            // Save to local database
+            saveWeatherDataToLocal(response.name, weatherData)
+            
+            Result.Success(weatherData)
         } catch (e: Exception) {
-            Result.failure(e)
+            errorHandler.handleError(e)
         }
+    }
+    
+    private suspend fun fetchAirQuality(locationName: String): Result<AirQuality> {
+        return try {
+            if (!networkMonitor.isNetworkAvailable()) {
+                return tryGetCachedAirQuality(locationName) ?: Result.Error(WeatherException.NetworkException.NoInternet)
+            }
+            
+            // Get coordinates for location
+            val locationResult = geocodingRepository.getLocationByName(locationName)
+            return when (locationResult) {
+                is Result.Success -> {
+                    val location = locationResult.data
+                    fetchAirQualityByCoordinates(location.latitude, location.longitude)
+                }
+                is Result.Error -> locationResult
+            }
+        } catch (e: Exception) {
+            errorHandler.handleError(e)
+        }
+    }
+    
+    private suspend fun fetchAirQualityByCoordinates(lat: Double, lon: Double): Result<AirQuality> {
+        return try {
+            val response = withNetworkRetry {
+                airPollutionService.getCurrentAirQuality(lat, lon, apiKey)
+            }
+            
+            val components = response.list.firstOrNull()?.components
+            val main = response.list.firstOrNull()?.main
+            
+            if (components == null || main == null) {
+                return Result.Error(WeatherException.DataException.InvalidData())
+            }
+            
+            val airQuality = AirQuality(
+                aqi = main.aqi,
+                pm25 = components.pm25,
+                pm10 = components.pm10,
+                timestamp = System.currentTimeMillis()
+            )
+            
+            // Save to local database
+            saveAirQualityToLocal("", airQuality) // TODO: Get location name
+            
+            Result.Success(airQuality)
+        } catch (e: Exception) {
+            errorHandler.handleError(e)
+        }
+    }
+    
+    private suspend fun saveWeatherDataToLocal(location: String, weatherData: WeatherData) {
+        try {
+            val entity = WeatherEntity(
+                location = location,
+                temperature = weatherData.temperature,
+                feelsLike = weatherData.feelsLike,
+                description = weatherData.description,
+                iconCode = weatherData.iconCode,
+                humidity = weatherData.humidity,
+                windSpeed = weatherData.windSpeed,
+                timestamp = weatherData.timestamp
+            )
+            weatherDao.insertWeatherData(entity)
+        } catch (e: Exception) {
+            Logger.e("Failed to save weather data to local database", e)
+        }
+    }
+    
+    private suspend fun saveAirQualityToLocal(location: String, airQuality: AirQuality) {
+        try {
+            val entity = AirQualityEntity(
+                location = location,
+                aqi = airQuality.aqi,
+                pm25 = airQuality.pm25,
+                pm10 = airQuality.pm10,
+                timestamp = airQuality.timestamp
+            )
+            airQualityDao.insertAirQualityData(entity)
+        } catch (e: Exception) {
+            Logger.e("Failed to save air quality data to local database", e)
+        }
+    }
+    
+    private suspend fun tryGetCachedData(location: String): Result<WeatherData>? {
+        return try {
+            val cachedEntity = weatherDao.getWeatherData(location).first()
+            if (cachedEntity != null && isCachedDataValid(cachedEntity.timestamp)) {
+                Result.Success(cachedEntity.toWeatherData())
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Logger.e("Failed to get cached weather data", e)
+            null
+        }
+    }
+    
+    private suspend fun tryGetCachedAirQuality(location: String): Result<AirQuality>? {
+        return try {
+            val cachedEntity = airQualityDao.getAirQualityData(location).first()
+            if (cachedEntity != null && isCachedDataValid(cachedEntity.timestamp)) {
+                Result.Success(cachedEntity.toAirQuality())
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Logger.e("Failed to get cached air quality data", e)
+            null
+        }
+    }
+    
+    private fun isCachedDataValid(timestamp: Long): Boolean {
+        val age = System.currentTimeMillis() - timestamp
+        return age < TimeUnit.HOURS.toMillis(CACHE_STALE_THRESHOLD_HOURS)
     }
 }
 
