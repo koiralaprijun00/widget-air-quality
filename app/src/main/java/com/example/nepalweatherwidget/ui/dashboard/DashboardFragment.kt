@@ -11,7 +11,11 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.nepalweatherwidget.R
+import com.example.nepalweatherwidget.core.error.WeatherException
 import com.example.nepalweatherwidget.databinding.FragmentDashboardBinding
+import com.example.nepalweatherwidget.presentation.model.AirQualityUiState
+import com.example.nepalweatherwidget.presentation.viewmodel.DashboardUiState
+import com.example.nepalweatherwidget.presentation.viewmodel.DashboardViewModel
 import com.example.nepalweatherwidget.ui.LocationAdapter
 import com.example.nepalweatherwidget.ui.ForecastAdapter
 import com.google.android.material.snackbar.Snackbar
@@ -58,7 +62,7 @@ class DashboardFragment : Fragment() {
 
     private fun setupSwipeRefresh() {
         binding.swipeRefreshLayout.setOnRefreshListener {
-            viewModel.loadWeatherData(currentLocation)
+            viewModel.refreshData()
         }
         binding.swipeRefreshLayout.setColorSchemeResources(
             R.color.primary,
@@ -101,14 +105,14 @@ class DashboardFragment : Fragment() {
                             showContent()
                             updateUI(state.weather, state.airQuality)
                         }
-                        is DashboardUiState.Error -> showError(state.message)
+                        is DashboardUiState.Error -> showError(state)
                     }
                 }
             }
         }
     }
 
-    private fun updateUI(weather: WeatherData, airQuality: AirQualityData) {
+    private fun updateUI(weather: WeatherData, airQuality: AirQualityUiState) {
         binding.apply {
             locationName.text = currentLocation
             locationSub.text = getString(R.string.location_subtitle)
@@ -140,16 +144,34 @@ class DashboardFragment : Fragment() {
         binding.swipeRefreshLayout.isRefreshing = false
     }
 
-    private fun showError(message: String) {
+    private fun showError(errorState: DashboardUiState.Error) {
         binding.loadingView.visibility = View.GONE
         binding.contentView.visibility = View.GONE
         binding.errorView.visibility = View.VISIBLE
         binding.swipeRefreshLayout.isRefreshing = false
         
-        view?.let {
-            Snackbar.make(it, message, Snackbar.LENGTH_LONG)
-                .setAction(getString(R.string.retry)) { viewModel.loadWeatherData(currentLocation) }
-                .show()
+        binding.errorText.text = errorState.message
+        binding.retryButton.visibility = if (errorState.canRetry) View.VISIBLE else View.GONE
+        
+        binding.retryButton.setOnClickListener {
+            viewModel.retryLastOperation()
+        }
+        
+        // Show appropriate error icon based on exception type
+        val errorIcon = when (errorState.exception) {
+            is WeatherException.NetworkException -> R.drawable.ic_wifi_off
+            is WeatherException.LocationException -> R.drawable.ic_location_off
+            else -> R.drawable.ic_error
+        }
+        binding.errorIcon.setImageResource(errorIcon)
+        
+        // Show snackbar for transient errors
+        if (errorState.canRetry) {
+            view?.let {
+                Snackbar.make(it, errorState.message, Snackbar.LENGTH_LONG)
+                    .setAction(getString(R.string.retry)) { viewModel.retryLastOperation() }
+                    .show()
+            }
         }
     }
     

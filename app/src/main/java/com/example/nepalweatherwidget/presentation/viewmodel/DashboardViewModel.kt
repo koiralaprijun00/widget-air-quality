@@ -2,7 +2,8 @@ package com.example.nepalweatherwidget.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.nepalweatherwidget.domain.exception.WeatherException
+import com.example.nepalweatherwidget.core.error.WeatherException
+import com.example.nepalweatherwidget.core.result.Result
 import com.example.nepalweatherwidget.domain.model.WeatherData
 import com.example.nepalweatherwidget.domain.repository.WeatherRepository
 import com.example.nepalweatherwidget.presentation.model.AirQualityUiState
@@ -19,7 +20,11 @@ sealed class DashboardUiState {
         val weather: WeatherData,
         val airQuality: AirQualityUiState
     ) : DashboardUiState()
-    data class Error(val message: String) : DashboardUiState()
+    data class Error(
+        val message: String,
+        val canRetry: Boolean = true,
+        val exception: WeatherException? = null
+    ) : DashboardUiState()
 }
 
 @HiltViewModel
@@ -30,7 +35,10 @@ class DashboardViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<DashboardUiState>(DashboardUiState.Loading)
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
+    private var lastLocation: String = "Kathmandu"
+
     fun loadWeatherData(location: String) {
+        lastLocation = location
         viewModelScope.launch {
             _uiState.value = DashboardUiState.Loading
             
@@ -41,25 +49,49 @@ class DashboardViewModel @Inject constructor(
                         airQuality = AirQualityUiState.fromAirQuality(airQuality)
                     )
                 }
-                .onFailure { exception ->
+                .onError { exception ->
                     _uiState.value = DashboardUiState.Error(
-                        when (exception) {
-                            is WeatherException.NetworkError -> "No internet connection. Please check your network settings."
-                            is WeatherException.ApiError -> "Server error: ${exception.message}"
-                            is WeatherException.LocationError -> "Location not found. Please try a different location."
-                            is WeatherException.DataError -> "Unable to fetch weather data: ${exception.message}"
-                            else -> "An unexpected error occurred. Please try again later."
-                        }
+                        message = getErrorMessage(exception),
+                        canRetry = canRetryError(exception),
+                        exception = exception
                     )
                 }
         }
     }
 
-    fun refreshData(location: String) {
-        loadWeatherData(location)
+    fun refreshData() {
+        loadWeatherData(lastLocation)
     }
 
-    fun retryLastOperation(location: String) {
-        loadWeatherData(location)
+    fun retryLastOperation() {
+        loadWeatherData(lastLocation)
+    }
+
+    private fun getErrorMessage(exception: WeatherException): String {
+        return when (exception) {
+            is WeatherException.NetworkException.NoInternet -> "No internet connection. Please check your network settings."
+            is WeatherException.NetworkException.Timeout -> "Request timed out. Please try again."
+            is WeatherException.NetworkException.UnknownHost -> "Unable to reach the server. Please try again later."
+            is WeatherException.ApiException.InvalidApiKey -> "Invalid API configuration. Please contact support."
+            is WeatherException.ApiException.RateLimitExceeded -> "Too many requests. Please try again later."
+            is WeatherException.ApiException.ServerError -> "Server error occurred. Please try again later."
+            is WeatherException.ApiException.HttpError -> "Error: ${exception.message}"
+            is WeatherException.LocationException.PermissionDenied -> "Location permission is required to show weather data."
+            is WeatherException.LocationException.LocationDisabled -> "Please enable location services to get weather updates."
+            is WeatherException.LocationException.LocationNotFound -> "Location not found. Please try a different location."
+            is WeatherException.DataException.NoDataAvailable -> "No weather data available for this location."
+            is WeatherException.DataException.InvalidData -> "Unable to process weather data. Please try again."
+            is WeatherException.DataException.ParseError -> "Error processing data. Please try again."
+            is WeatherException.UnknownError -> "An unexpected error occurred. Please try again."
+        }
+    }
+
+    private fun canRetryError(exception: WeatherException): Boolean {
+        return when (exception) {
+            is WeatherException.NetworkException,
+            is WeatherException.ApiException.ServerError,
+            is WeatherException.DataException.ParseError -> true
+            else -> false
+        }
     }
 } 
