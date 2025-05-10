@@ -15,6 +15,7 @@
     <string name="refresh_interval_required">Please select a refresh interval</string>
     <string name="widget_configuration_saved">Widget configuration saved</string>
     <string name="widget_configuration_failed">Failed to save widget configuration</string>
+    <string name="widget_refresh">Refresh widget</string>
     
     <!-- New strings for loading and error states -->
     <string name="loading_weather">Fetching weather data…</string>
@@ -88,4 +89,13 @@
     
     <!-- Navigation -->
     <string name="next_icon_description">Next</string>
+
+    <!-- Widget Format Strings -->
+    <string name="humidity_format">Humidity: %d%%</string>
+    <string name="wind_speed_format">Wind: %d km/h</string>
+    <string name="aqi_format">AQI: %d</string>
+    <string name="pm25_format">PM2.5: %d μg/m³</string>
+    <string name="pm10_format">PM10: %d μg/m³</string>
+    <string name="last_update_format">HH:mm</string>
+    <string name="widget_last_update">Last update: %s</string>
 </resources>

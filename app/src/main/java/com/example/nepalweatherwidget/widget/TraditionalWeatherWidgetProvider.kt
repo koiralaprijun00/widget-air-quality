@@ -11,16 +11,13 @@ import com.example.nepalweatherwidget.core.result.Result
 import com.example.nepalweatherwidget.domain.model.AirQuality
 import com.example.nepalweatherwidget.domain.model.WeatherData
 import com.example.nepalweatherwidget.domain.repository.WeatherRepository
-import com.example.nepalweatherwidget.core.util.Logger
+import com.example.nepalweatherwidget.domain.repository.WidgetPreferencesRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.cancel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -32,49 +29,57 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
     @Inject
     lateinit var weatherRepository: WeatherRepository
     
-    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    @Inject
+    lateinit var widgetPreferencesRepository: WidgetPreferencesRepository
+    
+    private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        // Batch update widgets
-        scope.launch {
-            val widgetUpdates = appWidgetIds.map { widgetId ->
-                async {
-                    updateWidget(context, appWidgetManager, widgetId)
-                }
-            }
-            widgetUpdates.awaitAll()
+        appWidgetIds.forEach { appWidgetId ->
+            updateWidget(context, appWidgetManager, appWidgetId)
         }
     }
     
-    private suspend fun updateWidget(
+    private fun updateWidget(
         context: Context,
         appWidgetManager: AppWidgetManager,
-        widgetId: Int
+        appWidgetId: Int
     ) {
-        // Show loading state immediately
-        showLoading(context, appWidgetManager, widgetId)
-        
-        // Get data with timeout
-        val result = withTimeoutOrNull(5000) {
-            weatherRepository.getWeatherAndAirQualityByLocationName("Kathmandu")
-        }
-        
-        if (result == null) {
-            showError(context, appWidgetManager, widgetId, "Update timed out")
-            return
-        }
-        
-        when (result) {
-            is Result.Success -> {
-                val (weather, airQuality) = result.data
-                updateWidgetViews(context, appWidgetManager, widgetId, weather, airQuality)
-            }
-            is Result.Error -> {
-                showError(context, appWidgetManager, widgetId, result.exception.message ?: "Unknown error")
+        coroutineScope.launch {
+            try {
+                // Get widget preferences
+                val preferences = widgetPreferencesRepository.getWidgetPreferences(appWidgetId)
+                when (preferences) {
+                    is Result.Success -> {
+                        val locationName = preferences.data.locationName
+                        // Get weather and air quality data
+                        val result = weatherRepository.getWeatherAndAirQuality(locationName)
+                        when (result) {
+                            is Result.Success -> {
+                                val (weatherData, airQuality) = result.data
+                                updateWidgetViews(
+                                    context,
+                                    appWidgetManager,
+                                    appWidgetId,
+                                    weatherData,
+                                    airQuality
+                                )
+                            }
+                            is Result.Error -> {
+                                showError(context, appWidgetManager, appWidgetId)
+                            }
+                        }
+                    }
+                    is Result.Error -> {
+                        showError(context, appWidgetManager, appWidgetId)
+                    }
+                }
+            } catch (e: Exception) {
+                showError(context, appWidgetManager, appWidgetId)
             }
         }
     }
@@ -82,73 +87,62 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
     private fun updateWidgetViews(
         context: Context,
         appWidgetManager: AppWidgetManager,
-        widgetId: Int,
-        weather: WeatherData,
+        appWidgetId: Int,
+        weatherData: WeatherData,
         airQuality: AirQuality
     ) {
         val views = RemoteViews(context.packageName, R.layout.widget_traditional_weather)
         
-        // Update weather information
-        views.setTextViewText(R.id.widget_temperature, context.getString(R.string.temperature_format, weather.temperature.toInt()))
-        views.setTextViewText(R.id.widget_description, weather.description)
-        views.setTextViewText(R.id.widget_humidity, context.getString(R.string.humidity_format, weather.humidity))
-        views.setTextViewText(R.id.widget_wind_speed, context.getString(R.string.wind_speed_format, weather.windSpeed))
+        // Update weather data
+        views.setTextViewText(R.id.temperature, context.getString(R.string.temperature_format, weatherData.temperature))
+        views.setTextViewText(R.id.weatherDescription, weatherData.description)
+        views.setTextViewText(R.id.humidity, context.getString(R.string.humidity_format, weatherData.humidity))
+        views.setTextViewText(R.id.windSpeed, context.getString(R.string.wind_speed_format, weatherData.windSpeed))
         
-        // Update air quality information
-        views.setTextViewText(R.id.widget_aqi, context.getString(R.string.aqi_format, airQuality.aqi))
-        views.setTextViewText(R.id.widget_pm25, context.getString(R.string.pm25_format, airQuality.pm25))
-        views.setTextViewText(R.id.widget_pm10, context.getString(R.string.pm10_format, airQuality.pm10))
+        // Update air quality data
+        views.setTextViewText(R.id.aqiValue, context.getString(R.string.aqi_format, airQuality.aqi))
+        views.setTextViewText(R.id.pm25Value, context.getString(R.string.pm25_format, airQuality.pm25))
+        views.setTextViewText(R.id.pm10Value, context.getString(R.string.pm10_format, airQuality.pm10))
         
         // Update last update time
-        val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-        val lastUpdateTime = dateFormat.format(Date())
-        views.setTextViewText(R.id.widget_last_update, context.getString(R.string.last_update_format, lastUpdateTime))
+        val lastUpdate = SimpleDateFormat(context.getString(R.string.last_update_format), Locale.getDefault())
+            .format(Date())
+        views.setTextViewText(R.id.lastUpdate, context.getString(R.string.widget_last_update, lastUpdate))
         
-        // Add refresh action
-        val refreshIntent = Intent(context, TraditionalWeatherWidgetProvider::class.java).apply {
+        // Set refresh button click listener
+        val refreshPendingIntent = getRefreshPendingIntent(context, appWidgetId)
+        views.setOnClickPendingIntent(R.id.refreshButton, refreshPendingIntent)
+        
+        appWidgetManager.updateAppWidget(appWidgetId, views)
+    }
+    
+    private fun showError(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int
+    ) {
+        val views = RemoteViews(context.packageName, R.layout.widget_traditional_weather)
+        views.setTextViewText(R.id.temperature, context.getString(R.string.error_loading_weather))
+        appWidgetManager.updateAppWidget(appWidgetId, views)
+    }
+    
+    private fun getRefreshPendingIntent(context: Context, appWidgetId: Int): PendingIntent {
+        val intent = Intent(context, TraditionalWeatherWidgetProvider::class.java).apply {
             action = ACTION_REFRESH
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
         }
-        val refreshPendingIntent = PendingIntent.getBroadcast(
+        return PendingIntent.getBroadcast(
             context,
-            widgetId,
-            refreshIntent,
+            appWidgetId,
+            intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        views.setOnClickPendingIntent(R.id.widget_refresh, refreshPendingIntent)
-        
-        appWidgetManager.updateAppWidget(widgetId, views)
-    }
-    
-    private fun showLoading(context: Context, appWidgetManager: AppWidgetManager, widgetId: Int) {
-        val views = RemoteViews(context.packageName, R.layout.widget_layout_loading)
-        appWidgetManager.updateAppWidget(widgetId, views)
-    }
-    
-    private fun showError(context: Context, appWidgetManager: AppWidgetManager, widgetId: Int, errorMessage: String) {
-        val views = RemoteViews(context.packageName, R.layout.widget_layout_error)
-        views.setTextViewText(R.id.error_message, errorMessage)
-        
-        // Add retry action
-        val retryIntent = Intent(context, TraditionalWeatherWidgetProvider::class.java).apply {
-            action = ACTION_RETRY
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
-        }
-        val retryPendingIntent = PendingIntent.getBroadcast(
-            context,
-            widgetId,
-            retryIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        views.setOnClickPendingIntent(R.id.retry_button, retryPendingIntent)
-        
-        appWidgetManager.updateAppWidget(widgetId, views)
     }
     
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
         // Cancel all coroutines when no widgets are active
-        scope.cancel()
+        coroutineScope.cancel()
     }
     
     override fun onReceive(context: Context, intent: Intent) {

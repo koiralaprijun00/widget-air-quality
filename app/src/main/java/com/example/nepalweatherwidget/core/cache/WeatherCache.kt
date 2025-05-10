@@ -1,6 +1,8 @@
 package com.example.nepalweatherwidget.core.cache
 
 import com.example.nepalweatherwidget.core.result.Result
+import javax.inject.Singleton
+import javax.inject.Inject
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.ConcurrentHashMap

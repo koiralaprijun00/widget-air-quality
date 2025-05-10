@@ -21,7 +21,7 @@ data class AirQualityUiState(
                 in 201..300 -> Pair("Very Unhealthy", Color.rgb(128, 0, 128)) // Purple
                 else -> Pair("Hazardous", Color.rgb(128, 0, 0)) // Maroon
             }
-            
+
             return AirQualityUiState(
                 aqi = airQuality.aqi,
                 pm25 = airQuality.pm25,
