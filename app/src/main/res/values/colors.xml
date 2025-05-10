@@ -65,4 +65,10 @@
     <!-- Tab Colors -->
     <color name="tab_selected">#FFFFFF</color>
     <color name="tab_unselected">#B0B0FF</color>
+    
+    <!-- Widget Colors -->
+    <color name="widget_surface">#FFFFFF</color>
+    <color name="widget_outline">#CCCCCC</color>
+    <color name="widget_text_primary">#222222</color>
+    <color name="widget_text_secondary">#888888</color>
 </resources>

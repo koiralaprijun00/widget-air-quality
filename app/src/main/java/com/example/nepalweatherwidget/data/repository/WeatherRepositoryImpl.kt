@@ -15,7 +15,7 @@ import com.example.nepalweatherwidget.data.local.entity.AirQualityEntity
 import com.example.nepalweatherwidget.data.remote.model.WeatherResponse
 import com.example.nepalweatherwidget.data.remote.model.AirQualityResponse
 import com.example.nepalweatherwidget.domain.model.WeatherData
-import com.example.nepalweatherwidget.domain.model.AirQualityData
+import com.example.nepalweatherwidget.domain.model.AirQuality
 import com.example.nepalweatherwidget.domain.repository.WeatherRepository
 import com.example.nepalweatherwidget.domain.repository.GeocodingRepository
 import kotlinx.coroutines.flow.Flow
@@ -44,14 +44,14 @@ class WeatherRepositoryImpl @Inject constructor(
         }
     }
     
-    override suspend fun getAirQualityByLocationName(locationName: String): Result<AirQualityData> {
+    override suspend fun getAirQualityByLocationName(locationName: String): Result<AirQuality> {
         return when (val locationResult = geocodingRepository.getLocationByName(locationName)) {
             is Result.Success -> getAirQualityByCoordinates(locationResult.data.latitude, locationResult.data.longitude)
             is Result.Error -> locationResult
         }
     }
     
-    override suspend fun getWeatherAndAirQualityByLocationName(locationName: String): Result<Pair<WeatherData, AirQualityData>> {
+    override suspend fun getWeatherAndAirQualityByLocationName(locationName: String): Result<Pair<WeatherData, AirQuality>> {
         return when (val locationResult = geocodingRepository.getLocationByName(locationName)) {
             is Result.Success -> getWeatherAndAirQualityByCoordinates(locationResult.data.latitude, locationResult.data.longitude)
             is Result.Error -> locationResult
@@ -61,12 +61,12 @@ class WeatherRepositoryImpl @Inject constructor(
     override suspend fun getWeatherDataByCoordinates(lat: Double, lon: Double): Result<WeatherData> {
         return try {
             if (!networkMonitor.isNetworkAvailable()) {
-                Logger.w("WeatherRepository: Network unavailable, using cached data")
+                Logger.w("WeatherRepository: Network unavailable, using cached weather data")
                 val cached = weatherDao.getLatestWeatherData().first()
                 if (cached != null) {
                     return Result.Success(cached.toWeatherData())
                 } else {
-                    return Result.Error(WeatherException.NetworkError("No internet connection and no cached data available"))
+                    return Result.Error(WeatherException.NetworkError("No internet connection and no cached weather data available"))
                 }
             }
 
@@ -84,13 +84,13 @@ class WeatherRepositoryImpl @Inject constructor(
         }
     }
     
-    override suspend fun getAirQualityByCoordinates(lat: Double, lon: Double): Result<AirQualityData> {
+    override suspend fun getAirQualityByCoordinates(lat: Double, lon: Double): Result<AirQuality> {
         return try {
             if (!networkMonitor.isNetworkAvailable()) {
                 Logger.w("WeatherRepository: Network unavailable, using cached air quality data")
                 val cached = airQualityDao.getLatestAirQualityData().first()
                 if (cached != null) {
-                    return Result.Success(cached.toAirQualityData())
+                    return Result.Success(cached.toAirQuality())
                 } else {
                     return Result.Error(WeatherException.NetworkError("No internet connection and no cached air quality data available"))
                 }
@@ -103,43 +103,42 @@ class WeatherRepositoryImpl @Inject constructor(
             val airQualityEntity = AirQualityEntity.fromResponse(response)
             airQualityDao.insertAirQualityData(airQualityEntity)
 
-            Result.Success(airQualityEntity.toAirQualityData())
+            Result.Success(airQualityEntity.toAirQuality())
         } catch (e: Exception) {
             Logger.e("WeatherRepository: Error fetching air quality data by coordinates", e)
             errorHandler.handleException(e)
         }
     }
     
-    override suspend fun getWeatherAndAirQualityByCoordinates(lat: Double, lon: Double): Result<Pair<WeatherData, AirQualityData>> {
+    override suspend fun getWeatherAndAirQualityByCoordinates(lat: Double, lon: Double): Result<Pair<WeatherData, AirQuality>> {
         return try {
             val weatherResult = getWeatherDataByCoordinates(lat, lon)
             val airQualityResult = getAirQualityByCoordinates(lat, lon)
-            
+
             when {
                 weatherResult is Result.Success && airQualityResult is Result.Success -> {
-                    Result.Success(Pair(weatherResult.data, airQualityResult.data))
+                    Result.Success(weatherResult.data to airQualityResult.data)
                 }
                 weatherResult is Result.Error -> weatherResult
                 airQualityResult is Result.Error -> airQualityResult
-                else -> Result.Error(WeatherException.UnknownError())
+                else -> Result.Error(WeatherException.UnknownError("Unknown error occurred"))
             }
         } catch (e: Exception) {
-            Logger.e("WeatherRepository: Error fetching combined data by coordinates", e)
+            Logger.e("WeatherRepository: Error fetching weather and air quality data by coordinates", e)
             errorHandler.handleException(e)
         }
     }
     
-    // Legacy methods
     override fun getWeatherData(location: String): Flow<Result<WeatherData>> = flow {
         try {
             // Check network availability
             if (!networkMonitor.isNetworkAvailable()) {
-                Logger.w("WeatherRepository: Network unavailable, using cached data")
+                Logger.w("WeatherRepository: Network unavailable, using cached weather data")
                 val cached = weatherDao.getLatestWeatherData().first()
                 if (cached != null) {
                     emit(Result.Success(cached.toWeatherData()))
                 } else {
-                    emit(Result.Error(WeatherException.NetworkError("No internet connection and no cached data available")))
+                    emit(Result.Error(WeatherException.NetworkError("No internet connection and no cached weather data available")))
                 }
                 return@flow
             }
@@ -152,7 +151,7 @@ class WeatherRepositoryImpl @Inject constructor(
 
             // Fetch fresh data with retry
             val response = withNetworkRetry {
-                weatherService.getWeatherData(location)
+                weatherService.getCurrentWeatherByLocation(location, apiKey)
             }
 
             // Save to database
@@ -166,14 +165,14 @@ class WeatherRepositoryImpl @Inject constructor(
         }
     }
     
-    override fun getAirQuality(location: String): Flow<Result<AirQualityData>> = flow {
+    override fun getAirQuality(location: String): Flow<Result<AirQuality>> = flow {
         try {
             // Check network availability
             if (!networkMonitor.isNetworkAvailable()) {
                 Logger.w("WeatherRepository: Network unavailable, using cached air quality data")
                 val cached = airQualityDao.getLatestAirQualityData().first()
                 if (cached != null) {
-                    emit(Result.Success(cached.toAirQualityData()))
+                    emit(Result.Success(cached.toAirQuality()))
                 } else {
                     emit(Result.Error(WeatherException.NetworkError("No internet connection and no cached air quality data available")))
                 }
@@ -183,40 +182,40 @@ class WeatherRepositoryImpl @Inject constructor(
             // Try to get cached data first
             val cached = airQualityDao.getLatestAirQualityData().first()
             if (cached != null) {
-                emit(Result.Success(cached.toAirQualityData()))
+                emit(Result.Success(cached.toAirQuality()))
             }
 
             // Fetch fresh data with retry
             val response = withNetworkRetry {
-                airPollutionService.getAirQualityData(location)
+                airPollutionService.getCurrentAirQualityByLocation(location, apiKey)
             }
 
             // Save to database
             val airQualityEntity = AirQualityEntity.fromResponse(response)
             airQualityDao.insertAirQualityData(airQualityEntity)
 
-            emit(Result.Success(airQualityEntity.toAirQualityData()))
+            emit(Result.Success(airQualityEntity.toAirQuality()))
         } catch (e: Exception) {
             Logger.e("WeatherRepository: Error fetching air quality data", e)
             emit(errorHandler.handleException(e))
         }
     }
     
-    override suspend fun getWeatherAndAirQuality(location: String): Result<Pair<WeatherData, AirQualityData>> {
+    override suspend fun getWeatherAndAirQuality(location: String): Result<Pair<WeatherData, AirQuality>> {
         return try {
             val weatherResult = getWeatherData(location).first()
             val airQualityResult = getAirQuality(location).first()
-            
+
             when {
                 weatherResult is Result.Success && airQualityResult is Result.Success -> {
-                    Result.Success(Pair(weatherResult.data, airQualityResult.data))
+                    Result.Success(weatherResult.data to airQualityResult.data)
                 }
                 weatherResult is Result.Error -> weatherResult
                 airQualityResult is Result.Error -> airQualityResult
-                else -> Result.Error(WeatherException.UnknownError())
+                else -> Result.Error(WeatherException.UnknownError("Unknown error occurred"))
             }
         } catch (e: Exception) {
-            Logger.e("WeatherRepository: Error fetching combined data", e)
+            Logger.e("WeatherRepository: Error fetching weather and air quality data", e)
             errorHandler.handleException(e)
         }
     }

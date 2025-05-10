@@ -3,14 +3,11 @@ package com.example.nepalweatherwidget.widget
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
 import android.widget.RemoteViews
-import com.example.nepalweatherwidget.MainActivity
 import com.example.nepalweatherwidget.R
 import com.example.nepalweatherwidget.core.result.Result
 import com.example.nepalweatherwidget.domain.model.AirQuality
@@ -31,6 +28,9 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import androidx.core.graphics.blue
+import androidx.core.graphics.green
+import androidx.core.graphics.red
 
 @AndroidEntryPoint
 class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
@@ -69,7 +69,7 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
                 
                 // Fetch fresh data
                 appWidgetIds.forEach { widgetId ->
-                    val location = widgetRepository.getWidgetLocation(widgetId) ?: "Kathmandu"
+                    val location = widgetRepository.getWidgetLocation(widgetId)
                     
                     when (val result = weatherRepository.getWeatherAndAirQualityByLocationName(location)) {
                         is Result.Success -> {
@@ -147,7 +147,6 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
-        private const val TAG = "WeatherWidget"
         private const val ACTION_RETRY = "com.example.nepalweatherwidget.ACTION_RETRY"
         private const val ACTION_REFRESH = "com.example.nepalweatherwidget.ACTION_REFRESH"
         
@@ -236,7 +235,7 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
         airQuality: AirQuality,
         stale: Boolean = false
     ) {
-        val location = widgetRepository.getWidgetLocation() // This might need widgetId parameter
+        val location = widgetRepository.getWidgetLocation()
         
         views.apply {
             // Common elements present in all layouts
@@ -249,69 +248,41 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
             // Handle stale data indicator
             setViewVisibility(R.id.stale_indicator, if (stale) android.view.View.VISIBLE else android.view.View.GONE)
             
-            // Update timestamp if available
-            try {
-                val timestamp = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                setTextViewText(R.id.last_updated, "Updated: $timestamp")
-            } catch (e: Exception) {
-                // Ignore if timestamp view doesn't exist
-            }
+            // Set colors based on AQI
+            val aqiColor = getAQIColor(airQuality.aqi)
+            setInt(R.id.aqi_indicator, "setBackgroundColor", aqiColor)
+            setInt(R.id.aqi_value, "setTextColor", Color.WHITE)
             
-            // Layout-specific elements
-            when (layoutId) {
-                R.layout.widget_layout_extra_small -> {
-                    // Extra small only shows location, temp, and AQI
-                    // No additional elements
-                }
-                
-                R.layout.widget_layout_small -> {
-                    setTextViewText(R.id.aqi_description, getAqiDescription(airQuality.aqi))
-                }
-                
-                R.layout.widget_layout_medium -> {
-                    setTextViewText(R.id.aqi_description, getAqiDescription(airQuality.aqi))
-                    setTextViewText(R.id.weather_description, weather.description)
-                    setTextViewText(R.id.humidity, "${weather.humidity}%")
-                    setTextViewText(R.id.wind_speed, "${weather.windSpeed} m/s")
-                }
-                
-                R.layout.widget_layout_large -> {
-                    setTextViewText(R.id.aqi_description, getAqiDescription(airQuality.aqi))
-                    setTextViewText(R.id.weather_description, weather.description)
-                    setTextViewText(R.id.humidity, "${weather.humidity}%")
-                    setTextViewText(R.id.wind_speed, "${weather.windSpeed} m/s")
-                    
-                    // Additional details for large layout
-                    setTextViewText(R.id.pm25_value, "PM2.5: ${airQuality.pm25}")
-                    setTextViewText(R.id.pm10_value, "PM10: ${airQuality.pm10}")
-                    setTextViewText(R.id.feels_like, "Feels like ${weather.feelsLike.roundToInt()}°C")
-                    
-                    // Health advice
-                    setTextViewText(R.id.health_advice, getHealthAdvice(airQuality.aqi))
-                }
-            }
-            
-            // Set AQI color
-            val aqiColor = getAqiColor(airQuality.aqi)
-            setInt(R.id.aqi_value, "setTextColor", aqiColor)
-            try {
-                setInt(R.id.aqi_indicator, "setBackgroundColor", aqiColor)
-            } catch (e: Exception) {
-                // Ignore if indicator doesn't exist
-            }
+            // Set last updated time
+            val lastUpdated = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+            setTextViewText(R.id.last_updated, "Last updated: $lastUpdated")
+        }
+    }
+    
+    private fun getAQIColor(aqi: Int): Int {
+        return when (aqi) {
+            1 -> Color.rgb(0, 228, 0) // Good
+            2 -> Color.rgb(255, 255, 0) // Fair
+            3 -> Color.rgb(255, 126, 0) // Moderate
+            4 -> Color.rgb(255, 0, 0) // Poor
+            5 -> Color.rgb(153, 0, 76) // Very Poor
+            else -> Color.GRAY
         }
     }
     
     private fun addClickActions(context: Context, views: RemoteViews, widgetId: Int) {
-        // Open app on widget click
-        val intent = Intent(context, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
+        // Retry action
+        val retryIntent = Intent(context, TraditionalWeatherWidgetProvider::class.java).apply {
+            action = ACTION_RETRY
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+        }
+        val retryPendingIntent = PendingIntent.getBroadcast(
             context,
             widgetId,
-            intent,
+            retryIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+        views.setOnClickPendingIntent(R.id.retry_button, retryPendingIntent)
         
         // Refresh action
         val refreshIntent = Intent(context, TraditionalWeatherWidgetProvider::class.java).apply {
@@ -320,60 +291,21 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
         }
         val refreshPendingIntent = PendingIntent.getBroadcast(
             context,
-            widgetId + 1000, // Unique request code
+            widgetId + 1000, // Different request code
             refreshIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        try {
-            views.setOnClickPendingIntent(R.id.refresh_button, refreshPendingIntent)
-        } catch (e: Exception) {
-            // Ignore if refresh button doesn't exist
-        }
+        views.setOnClickPendingIntent(R.id.refresh_button, refreshPendingIntent)
     }
     
-    private fun getAqiDescription(aqi: Int): String {
-        return when (aqi) {
-            1 -> "Good"
-            2 -> "Fair"
-            3 -> "Moderate"
-            4 -> "Poor"
-            5 -> "Very Poor"
-            else -> "Unknown"
-        }
+    private fun showLoading(context: Context, appWidgetManager: AppWidgetManager, widgetId: Int) {
+        val views = RemoteViews(context.packageName, R.layout.widget_layout_loading)
+        appWidgetManager.updateAppWidget(widgetId, views)
     }
     
-    private fun getAqiColor(aqi: Int): Int {
-        return when (aqi) {
-            1 -> Color.parseColor("#4CAF50") // Green
-            2 -> Color.parseColor("#FFEB3B") // Yellow
-            3 -> Color.parseColor("#FF9800") // Orange
-            4 -> Color.parseColor("#F44336") // Red
-            5 -> Color.parseColor("#9C27B0") // Purple
-            else -> Color.parseColor("#9E9E9E") // Gray
-        }
-    }
-    
-    private fun getHealthAdvice(aqi: Int): String {
-        return when (aqi) {
-            1 -> "Enjoy outdoor activities"
-            2 -> "Consider limiting outdoor activities"
-            3 -> "Limit prolonged outdoor activities"
-            4 -> "Avoid outdoor activities if sensitive"
-            5 -> "Stay indoors, avoid all outdoor activities"
-            else -> "Check air quality updates"
-        }
-    }
-    
-    private fun showError(
-        context: Context,
-        appWidgetManager: AppWidgetManager,
-        widgetId: Int,
-        message: String
-    ) {
+    private fun showError(context: Context, appWidgetManager: AppWidgetManager, widgetId: Int, errorMessage: String) {
         val views = RemoteViews(context.packageName, R.layout.widget_layout_error)
-        
-        // Set error message
-        views.setTextViewText(R.id.error_message, message)
+        views.setTextViewText(R.id.error_message, errorMessage)
         
         // Add retry action
         val retryIntent = Intent(context, TraditionalWeatherWidgetProvider::class.java).apply {
@@ -388,15 +320,6 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
         )
         views.setOnClickPendingIntent(R.id.retry_button, retryPendingIntent)
         
-        appWidgetManager.updateAppWidget(widgetId, views)
-    }
-
-    private fun showLoading(
-        context: Context,
-        appWidgetManager: AppWidgetManager,
-        widgetId: Int
-    ) {
-        val views = RemoteViews(context.packageName, R.layout.widget_layout_loading)
         appWidgetManager.updateAppWidget(widgetId, views)
     }
 } 

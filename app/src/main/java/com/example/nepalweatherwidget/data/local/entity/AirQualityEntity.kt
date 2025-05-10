@@ -3,6 +3,7 @@ package com.example.nepalweatherwidget.data.local.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.nepalweatherwidget.data.remote.model.AirQualityResponse
+import com.example.nepalweatherwidget.domain.model.AirQuality
 
 @Entity(tableName = "air_quality_data")
 data class AirQualityEntity(
@@ -24,5 +25,14 @@ data class AirQualityEntity(
                 timestamp = System.currentTimeMillis()
             )
         }
+    }
+
+    fun toAirQuality(): AirQuality {
+        return AirQuality(
+            aqi = aqi,
+            pm25 = pm25,
+            pm10 = pm10,
+            timestamp = timestamp
+        )
     }
 } 

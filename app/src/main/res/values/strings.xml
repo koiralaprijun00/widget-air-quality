@@ -2,6 +2,10 @@
 <resources>
     <!-- Existing strings... -->
     
+    <!-- Widget Configuration -->
+    <string name="widget_config_title">Configure Weather Widget</string>
+    <string name="widget_name">Weather Widget</string>
+    
     <!-- New strings for loading and error states -->
     <string name="loading_weather">Fetching weather data…</string>
     <string name="error_loading_weather">Unable to load weather data</string>
