@@ -3,31 +3,33 @@ package com.example.nepalweatherwidget.widget
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
 import android.widget.RemoteViews
 import com.example.nepalweatherwidget.MainActivity
 import com.example.nepalweatherwidget.R
-import com.example.nepalweatherwidget.domain.model.WidgetData
-import com.example.nepalweatherwidget.domain.repository.WidgetRepository
+import com.example.nepalweatherwidget.core.result.Result
+import com.example.nepalweatherwidget.domain.model.AirQuality
+import com.example.nepalweatherwidget.domain.model.WeatherData
+import com.example.nepalweatherwidget.domain.repository.WeatherRepository
 import com.example.nepalweatherwidget.ui.WidgetConfigActivity
 import com.example.nepalweatherwidget.worker.WidgetUpdateWorker
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
-    private val tag = "TraditionalWidget"
     
     @Inject
-    lateinit var widgetRepository: WidgetRepository
+    lateinit var weatherRepository: WeatherRepository
     
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -36,18 +38,19 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
+        // Show loading initially
+        appWidgetIds.forEach { widgetId ->
+            showLoading(context, appWidgetManager, widgetId)
+        }
+        
         scope.launch {
-            showLoading(context, appWidgetManager, appWidgetIds)
-            
-            when (val data = widgetRepository.getWidgetData()) {
-                is WidgetData.Success -> {
-                    updateWidgets(context, appWidgetManager, appWidgetIds, data)
+            when (val result = weatherRepository.getWeatherAndAirQualityByLocationName("Kathmandu")) {
+                is Result.Success -> {
+                    val (weather, airQuality) = result.data
+                    updateWidgets(context, appWidgetManager, appWidgetIds, weather, airQuality)
                 }
-                is WidgetData.Error -> {
-                    showError(context, appWidgetManager, appWidgetIds, data.message)
-                }
-                WidgetData.Loading -> {
-                    // Already showing loading
+                is Result.Error -> {
+                    showError(context, appWidgetManager, appWidgetIds, result.exception.message ?: "Unknown error")
                 }
             }
         }
@@ -105,7 +108,8 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
-        data: WidgetData.Success
+        weather: WeatherData,
+        airQuality: AirQuality
     ) {
         appWidgetIds.forEach { widgetId ->
             val options = appWidgetManager.getAppWidgetOptions(widgetId)
@@ -116,7 +120,7 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
             val views = RemoteViews(context.packageName, layout)
             
             // Update UI
-            updateWidgetUI(views, data.weather, data.airQuality)
+            updateWidgetUI(views, weather, airQuality)
             
             // Add click actions
             addClickActions(context, views)
@@ -131,26 +135,21 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
         airQuality: AirQuality
     ) {
         views.apply {
-            setTextViewText(R.id.location, widgetRepository.getWidgetLocation())
+            setTextViewText(R.id.location, "Kathmandu")
             setTextViewText(R.id.temperature, "${weather.temperature.toInt()}°C")
-            setTextViewText(R.id.description, weather.description)
+            setTextViewText(R.id.weather_description, weather.description)
+            
+            // All layouts have AQI value and description
+            setTextViewText(R.id.aqi_value, airQuality.aqi.toString())
+            setTextViewText(R.id.aqi_description, getAqiDescription(airQuality.aqi))
             
             // Medium and large layouts
-            if (findViewId(R.id.humidity) != 0) {
-                setTextViewText(R.id.humidity, "Humidity: ${weather.humidity}%")
-                setTextViewText(R.id.wind_speed, "Wind: ${weather.windSpeed} m/s")
-                setTextViewText(R.id.aqi, "AQI: ${airQuality.aqi}")
-                
-                // Set AQI color
-                val aqiColor = getAqiColor(airQuality.aqi)
-                setInt(R.id.aqi, "setTextColor", aqiColor)
-            }
+            setTextViewText(R.id.humidity, "${weather.humidity}%")
+            setTextViewText(R.id.wind_speed, "${weather.windSpeed} m/s")
             
-            // Large layout only
-            if (findViewId(R.id.pm25) != 0) {
-                setTextViewText(R.id.pm25, "PM2.5: ${airQuality.pm25}")
-                setTextViewText(R.id.pm10, "PM10: ${airQuality.pm10}")
-            }
+            // Set AQI color
+            val aqiColor = getAqiColor(airQuality.aqi)
+            setInt(R.id.aqi_value, "setTextColor", aqiColor)
         }
     }
     
@@ -170,6 +169,17 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
             width < 200 && height < 120 -> R.layout.widget_layout_small
             width < 300 || height < 150 -> R.layout.widget_layout_medium
             else -> R.layout.widget_layout_large
+        }
+    }
+    
+    private fun getAqiDescription(aqi: Int): String {
+        return when (aqi) {
+            1 -> "Good"
+            2 -> "Fair"
+            3 -> "Moderate"
+            4 -> "Poor"
+            5 -> "Very Poor"
+            else -> "Unknown"
         }
     }
     
@@ -216,11 +226,9 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
     private fun showLoading(
         context: Context,
         appWidgetManager: AppWidgetManager,
-        appWidgetIds: IntArray
+        appWidgetId: Int
     ) {
-        appWidgetIds.forEach { appWidgetId ->
-            val views = RemoteViews(context.packageName, R.layout.widget_layout_loading)
-            appWidgetManager.updateAppWidget(appWidgetId, views)
-        }
+        val views = RemoteViews(context.packageName, R.layout.widget_layout_loading)
+        appWidgetManager.updateAppWidget(appWidgetId, views)
     }
 } 

@@ -21,8 +21,7 @@ import java.util.concurrent.TimeUnit
 @HiltWorker
 class WidgetUpdateWorker @AssistedInject constructor(
     @Assisted context: Context,
-    @Assisted params: WorkerParameters,
-    private val widgetRepository: WidgetRepository
+    @Assisted params: WorkerParameters
 ) : CoroutineWorker(context, params) {
     
     override suspend fun doWork(): Result {
