@@ -11,10 +11,21 @@ import android.widget.RemoteViews
 import com.example.nepalweatherwidget.MainActivity
 import com.example.nepalweatherwidget.R
 import com.example.nepalweatherwidget.domain.usecase.GetWeatherUseCase
+import com.example.nepalweatherwidget.domain.usecase.GetAirQualityUseCase
 import com.example.nepalweatherwidget.worker.WeatherUpdateWorker
+import com.example.widget_air_quality.data.model.AirQualityIndex
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
     private val tag = "TraditionalWidget"
+    
+    @Inject
+    lateinit var getAirQualityUseCase: GetAirQualityUseCase
 
     override fun onUpdate(
         context: Context,
@@ -69,27 +80,49 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(R.id.humidity, "${weatherData.humidity}%")
             views.setTextViewText(R.id.wind_speed, "${weatherData.windSpeed} m/s")
             
-            // Set AQI data and description
-            val aqiValue = getAirQualityIndex() // Get actual AQI value from data source
-            views.setTextViewText(R.id.aqi_value, aqiValue.toString())
-            
-            // Set AQI description based on value
-            val aqiDescription = when {
-                aqiValue <= 50 -> "Good"
-                aqiValue <= 100 -> "Moderate"
-                aqiValue <= 150 -> "Unhealthy for Sensitive Groups"
-                aqiValue <= 200 -> "Unhealthy"
-                aqiValue <= 300 -> "Very Unhealthy"
-                else -> "Hazardous"
-            }
-            views.setTextViewText(R.id.aqi_description, aqiDescription)
-            
-            // Set additional data for large layout
-            if (layout == R.layout.widget_layout_large) {
-                views.setTextViewText(R.id.pm25_value, "PM2.5: 12.3 μg/m³")
-                views.setTextViewText(R.id.weather_details, "Feels like ${weatherData.temperature + 2}°C")
-                views.setTextViewText(R.id.wind_direction, "North East")
-                views.setTextViewText(R.id.humidity_description, getHumidityDescription(weatherData.humidity))
+            // Fetch and set real air quality data
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val airQualityResult = getAirQualityUseCase.getCurrentAirQuality(
+                        lat = 27.7172, // Kathmandu coordinates
+                        lon = 85.3240
+                    )
+                    
+                    airQualityResult.onSuccess { response ->
+                        response.list.firstOrNull()?.let { airData ->
+                            val aqi = airData.main.aqi
+                            val aqiIndex = AirQualityIndex.fromValue(aqi)
+                            
+                            views.setTextViewText(R.id.aqi_value, aqi.toString())
+                            views.setTextViewText(R.id.aqi_description, aqiIndex.description)
+                            
+                            // Set additional data for large layout
+                            if (layout == R.layout.widget_layout_large) {
+                                views.setTextViewText(R.id.pm25_value, 
+                                    "PM2.5: ${String.format("%.1f", airData.components.pm2_5)} μg/m³")
+                                views.setTextViewText(R.id.weather_details, 
+                                    "Feels like ${weatherData.temperature + 2}°C")
+                                views.setTextViewText(R.id.wind_direction, "North East")
+                                views.setTextViewText(R.id.humidity_description, 
+                                    getHumidityDescription(weatherData.humidity))
+                            }
+                            
+                            // Update the widget
+                            appWidgetManager.updateAppWidget(widgetId, views)
+                        }
+                    }.onFailure { error ->
+                        Log.e(tag, "Error fetching air quality data", error)
+                        // Set default values in case of error
+                        views.setTextViewText(R.id.aqi_value, "N/A")
+                        views.setTextViewText(R.id.aqi_description, "Data unavailable")
+                        appWidgetManager.updateAppWidget(widgetId, views)
+                    }
+                } catch (e: Exception) {
+                    Log.e(tag, "Error updating widget with air quality data", e)
+                    views.setTextViewText(R.id.aqi_value, "N/A")
+                    views.setTextViewText(R.id.aqi_description, "Data unavailable")
+                    appWidgetManager.updateAppWidget(widgetId, views)
+                }
             }
             
             // Set up click intent for the entire widget
@@ -102,17 +135,12 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
             )
             views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
             
-            // Update the widget
+            // Initial update with weather data
             appWidgetManager.updateAppWidget(widgetId, views)
             Log.d(tag, "Widget ID $widgetId updated successfully with layout: $layout")
         } catch (e: Exception) {
             Log.e(tag, "Error updating widget ID $widgetId", e)
         }
-    }
-    
-    private fun getAirQualityIndex(): Int {
-        // TODO: Implement actual AQI data fetching
-        return 75 // Return a reasonable default value for now
     }
     
     private fun getHumidityDescription(humidity: Int): String {

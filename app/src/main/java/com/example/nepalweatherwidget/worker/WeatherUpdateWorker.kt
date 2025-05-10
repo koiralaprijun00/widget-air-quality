@@ -12,13 +12,17 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.example.nepalweatherwidget.widget.WeatherWidget
 import com.example.nepalweatherwidget.domain.usecase.GetWeatherUseCase
+import com.example.nepalweatherwidget.domain.usecase.GetAirQualityUseCase
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 class WeatherUpdateWorker(
-    context: Context,
-    workerParams: WorkerParameters
+    @ApplicationContext context: Context,
+    workerParams: WorkerParameters,
+    private val getAirQualityUseCase: GetAirQualityUseCase
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
@@ -27,6 +31,18 @@ class WeatherUpdateWorker(
             // Get mock weather data
             val weatherData = GetWeatherUseCase.getMockWeatherData()
             Log.d(TAG, "Got weather data: $weatherData")
+
+            // Get real air quality data
+            val airQualityResult = getAirQualityUseCase.getCurrentAirQuality(
+                lat = 27.7172, // Kathmandu coordinates
+                lon = 85.3240
+            )
+            
+            airQualityResult.onSuccess { airQualityData ->
+                Log.d(TAG, "Got air quality data: $airQualityData")
+            }.onFailure { error ->
+                Log.e(TAG, "Failed to get air quality data", error)
+            }
 
             // Update all widget instances
             val widget = WeatherWidget()
