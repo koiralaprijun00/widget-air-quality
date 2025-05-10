@@ -2,6 +2,7 @@ package com.example.nepalweatherwidget.core.di
 
 import com.example.nepalweatherwidget.BuildConfig
 import com.example.nepalweatherwidget.data.remote.api.AirPollutionService
+import com.example.nepalweatherwidget.data.remote.api.GeocodingService
 import com.example.nepalweatherwidget.data.remote.api.WeatherService
 import dagger.Module
 import dagger.Provides
@@ -54,5 +55,11 @@ object NetworkModule {
     @Singleton
     fun provideAirPollutionService(retrofit: Retrofit): AirPollutionService {
         return retrofit.create(AirPollutionService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGeocodingService(retrofit: Retrofit): GeocodingService {
+        return retrofit.create(GeocodingService::class.java)
     }
 } 

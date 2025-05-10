@@ -37,12 +37,12 @@ class DashboardViewModel @Inject constructor(
 
     private var lastLocation: String = "Kathmandu"
 
-    fun loadWeatherData(location: String) {
-        lastLocation = location
+    fun loadWeatherData(locationName: String) {
+        lastLocation = locationName
         viewModelScope.launch {
             _uiState.value = DashboardUiState.Loading
             
-            weatherRepository.getWeatherAndAirQuality(location)
+            weatherRepository.getWeatherAndAirQualityByLocationName(locationName)
                 .onSuccess { (weather, airQuality) ->
                     _uiState.value = DashboardUiState.Success(
                         weather = weather,
