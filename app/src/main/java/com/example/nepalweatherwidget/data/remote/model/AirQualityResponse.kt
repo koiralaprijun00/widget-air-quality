@@ -3,48 +3,27 @@ package com.example.nepalweatherwidget.data.remote.model
 import com.google.gson.annotations.SerializedName
 
 data class AirQualityResponse(
-    @SerializedName("coord")
-    val coordinates: Coordinates,
     @SerializedName("list")
-    val airQualityList: List<AirQualityData>
-)
+    val list: List<AirQualityData>
+) {
+    data class AirQualityData(
+        @SerializedName("main")
+        val main: Main,
+        @SerializedName("components")
+        val components: Components,
+        @SerializedName("dt")
+        val timestamp: Long
+    ) {
+        data class Main(
+            @SerializedName("aqi")
+            val aqi: Int
+        )
 
-data class Coordinates(
-    @SerializedName("lon")
-    val longitude: Double,
-    @SerializedName("lat")
-    val latitude: Double
-)
-
-data class AirQualityData(
-    @SerializedName("main")
-    val main: Main,
-    @SerializedName("components")
-    val components: Components,
-    @SerializedName("dt")
-    val timestamp: Long
-)
-
-data class Main(
-    @SerializedName("aqi")
-    val aqi: Int
-)
-
-data class Components(
-    @SerializedName("co")
-    val co: Double,
-    @SerializedName("no")
-    val no: Double,
-    @SerializedName("no2")
-    val no2: Double,
-    @SerializedName("o3")
-    val o3: Double,
-    @SerializedName("so2")
-    val so2: Double,
-    @SerializedName("pm2_5")
-    val pm25: Double,
-    @SerializedName("pm10")
-    val pm10: Double,
-    @SerializedName("nh3")
-    val nh3: Double
-) 
+        data class Components(
+            @SerializedName("pm2_5")
+            val pm25: Double,
+            @SerializedName("pm10")
+            val pm10: Double
+        )
+    }
+} 

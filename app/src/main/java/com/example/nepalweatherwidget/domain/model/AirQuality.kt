@@ -4,5 +4,5 @@ data class AirQuality(
     val aqi: Int,
     val pm25: Double,
     val pm10: Double,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long
 ) 
