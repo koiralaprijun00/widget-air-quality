@@ -11,6 +11,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dagger.multibindings.Multibinds
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -36,6 +37,17 @@ interface WorkerAssistedFactory<T : ListenableWorker> {
 @Module
 @InstallIn(SingletonComponent::class)
 object WorkerModule {
+    
+    @Multibinds
+    abstract fun bindWorkerFactories(): Map<Class<out ListenableWorker>, @JvmSuppressWildcards WorkerAssistedFactory<out ListenableWorker>>
+    
+    @Provides
+    @Singleton
+    fun provideHiltWorkerFactory(
+        workerFactories: Map<Class<out ListenableWorker>, @JvmSuppressWildcards WorkerAssistedFactory<out ListenableWorker>>
+    ): HiltWorkerFactory {
+        return HiltWorkerFactory(workerFactories)
+    }
     
     @Provides
     @Singleton

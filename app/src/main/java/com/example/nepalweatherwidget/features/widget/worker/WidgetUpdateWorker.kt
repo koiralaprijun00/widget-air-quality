@@ -1,4 +1,4 @@
-package com.example.nepalweatherwidget.worker
+package com.example.nepalweatherwidget.features.widget.worker
 
 import android.content.ComponentName
 import android.content.Context
@@ -14,15 +14,19 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.example.nepalweatherwidget.widget.TraditionalWeatherWidgetProvider
+import com.example.nepalweatherwidget.core.di.WorkerAssistedFactory
+import com.example.nepalweatherwidget.core.di.WorkerKey
+import com.example.nepalweatherwidget.features.widget.domain.repository.WidgetRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
 
 @HiltWorker
 class WidgetUpdateWorker @AssistedInject constructor(
-    @Assisted context: Context,
-    @Assisted params: WorkerParameters
-) : CoroutineWorker(context, params) {
+    @Assisted appContext: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val widgetRepository: WidgetRepository
+) : CoroutineWorker(appContext, workerParams) {
     
     override suspend fun doWork(): Result {
         return try {
@@ -44,9 +48,13 @@ class WidgetUpdateWorker @AssistedInject constructor(
             
             Result.success()
         } catch (e: Exception) {
-            Result.retry()
+            Result.failure()
         }
     }
+    
+    @WorkerKey
+    @AssistedFactory
+    interface Factory : WorkerAssistedFactory<WidgetUpdateWorker>
     
     companion object {
         private const val WIDGET_UPDATE_WORK = "widget_update_work"

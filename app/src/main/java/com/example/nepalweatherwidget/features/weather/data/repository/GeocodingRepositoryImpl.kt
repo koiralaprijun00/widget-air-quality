@@ -1,4 +1,4 @@
-package com.example.nepalweatherwidget.data.repository
+package com.example.nepalweatherwidget.features.weather.data.repository
 
 import com.example.nepalweatherwidget.core.error.ErrorHandler
 import com.example.nepalweatherwidget.core.error.WeatherException
@@ -7,15 +7,15 @@ import com.example.nepalweatherwidget.core.result.Result
 import com.example.nepalweatherwidget.data.remote.api.GeocodingService
 import com.example.nepalweatherwidget.domain.model.Location
 import com.example.nepalweatherwidget.domain.repository.GeocodingRepository
+import com.example.nepalweatherwidget.core.di.qualifiers.OpenWeatherApiKey
 import javax.inject.Inject
-import javax.inject.Named
 import javax.inject.Singleton
 
 @Singleton
 class GeocodingRepositoryImpl @Inject constructor(
     private val geocodingService: GeocodingService,
     private val errorHandler: ErrorHandler,
-    @Named("openweather_api_key") private val apiKey: String
+    @OpenWeatherApiKey private val apiKey: String
 ) : GeocodingRepository {
     
     override suspend fun getLocationByName(locationName: String): Result<Location> {

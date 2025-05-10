@@ -13,6 +13,7 @@ import com.example.nepalweatherwidget.features.dashboard.domain.repository.Geoco
 import com.example.nepalweatherwidget.features.dashboard.domain.repository.WeatherRepository
 import com.example.nepalweatherwidget.features.dashboard.presentation.model.AirQualityUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -38,6 +39,7 @@ sealed class DashboardUiState {
 }
 
 @HiltViewModel
+@ViewModelScoped
 class DashboardViewModel @Inject constructor(
     private val weatherRepository: WeatherRepository,
     private val geocodingRepository: GeocodingRepository,

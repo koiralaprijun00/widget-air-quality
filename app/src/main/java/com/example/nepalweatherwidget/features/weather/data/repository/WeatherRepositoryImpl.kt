@@ -1,4 +1,4 @@
-package com.example.nepalweatherwidget.data.repository
+package com.example.nepalweatherwidget.features.weather.data.repository
 
 import com.example.nepalweatherwidget.core.cache.WeatherCache
 import com.example.nepalweatherwidget.core.error.ErrorHandler
@@ -23,21 +23,23 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import javax.inject.Named
 import javax.inject.Singleton
 import kotlin.time.Duration.Companion.minutes
+import com.example.nepalweatherwidget.core.di.qualifiers.OpenWeatherApiKey
+import com.example.nepalweatherwidget.core.di.qualifiers.WeatherApiService
+import com.example.nepalweatherwidget.core.di.qualifiers.AirQualityApiService
 
 @Singleton
 class WeatherRepositoryImpl @Inject constructor(
-    private val weatherService: WeatherService,
-    private val airPollutionService: AirPollutionService,
+    @WeatherApiService private val weatherService: WeatherService,
+    @AirQualityApiService private val airPollutionService: AirPollutionService,
     private val weatherDao: WeatherDao,
     private val airQualityDao: AirQualityDao,
     private val geocodingRepository: GeocodingRepository,
     private val networkMonitor: NetworkMonitor,
     private val errorHandler: ErrorHandler,
     private val weatherCache: WeatherCache,
-    @Named("openweather_api_key") private val apiKey: String
+    @OpenWeatherApiKey private val apiKey: String
 ) : WeatherRepository {
     
     companion object {

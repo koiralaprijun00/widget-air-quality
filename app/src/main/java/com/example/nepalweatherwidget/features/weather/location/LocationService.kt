@@ -1,4 +1,4 @@
-package com.example.nepalweatherwidget.location
+package com.example.nepalweatherwidget.features.weather.location
 
 import android.Manifest
 import android.content.Context
@@ -7,6 +7,7 @@ import android.location.Location
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.example.nepalweatherwidget.core.di.scopes.ActivityScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,7 +15,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
-@Singleton
+@ActivityScope
 class LocationService @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
