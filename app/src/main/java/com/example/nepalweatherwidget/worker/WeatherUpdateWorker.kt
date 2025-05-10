@@ -2,6 +2,7 @@ package com.example.nepalweatherwidget.worker
 
 import android.content.Context
 import android.util.Log
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.Constraints
@@ -9,67 +10,40 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import com.example.nepalweatherwidget.widget.WeatherWidget
-import com.example.nepalweatherwidget.domain.usecase.GetWeatherUseCase
-import com.example.nepalweatherwidget.domain.usecase.GetAirQualityUseCase
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.example.nepalweatherwidget.domain.repository.WidgetRepository
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 
-class WeatherUpdateWorker(
-    @ApplicationContext context: Context,
-    workerParams: WorkerParameters,
-    private val getAirQualityUseCase: GetAirQualityUseCase
-) : CoroutineWorker(context, workerParams) {
+@HiltWorker
+class WeatherUpdateWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted params: WorkerParameters,
+    private val widgetRepository: WidgetRepository
+) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         Log.d(TAG, "Starting background work...")
         try {
-            // Get mock weather data
-            val weatherData = GetWeatherUseCase.getMockWeatherData()
-            Log.d(TAG, "Got weather data: $weatherData")
-
-            // Get real air quality data
-            val airQualityResult = getAirQualityUseCase.getCurrentAirQuality(
-                lat = 27.7172, // Kathmandu coordinates
-                lon = 85.3240
-            )
-            
-            airQualityResult.onSuccess { airQualityData ->
-                Log.d(TAG, "Got air quality data: $airQualityData")
-            }.onFailure { error ->
-                Log.e(TAG, "Failed to get air quality data", error)
-            }
-
-            // Update all widget instances
-            val widget = WeatherWidget()
-            val manager = GlanceAppWidgetManager(applicationContext)
-            val glanceIds = manager.getGlanceIds(WeatherWidget::class.java)
-            
-            Log.d(TAG, "Found ${glanceIds.size} widget instances to update")
-            
-            if (glanceIds.isEmpty()) {
-                Log.d(TAG, "No widgets found to update")
-                return@withContext Result.success()
-            }
-            
-            glanceIds.forEach { glanceId ->
-                try {
-                    widget.update(applicationContext, glanceId)
-                    Log.d(TAG, "Successfully updated widget with ID: $glanceId")
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to update widget with ID: $glanceId", e)
+            when (val widgetData = widgetRepository.getWidgetData()) {
+                is com.example.nepalweatherwidget.domain.model.WidgetData.Success -> {
+                    Log.d(TAG, "Successfully fetched widget data")
+                    Result.success()
+                }
+                is com.example.nepalweatherwidget.domain.model.WidgetData.Error -> {
+                    Log.e(TAG, "Error fetching widget data: ${widgetData.message}")
+                    Result.retry()
+                }
+                is com.example.nepalweatherwidget.domain.model.WidgetData.Loading -> {
+                    Log.d(TAG, "Widget data is loading")
+                    Result.retry()
                 }
             }
-            
-            Log.d(TAG, "Successfully updated all widgets")
-            Result.success()
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update widgets", e)
-            Result.failure()
+            Log.e(TAG, "Failed to update widget data", e)
+            Result.retry()
         }
     }
 

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Configure Weather Widget"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Location"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp"/>
+
+    <Spinner
+        android:id="@+id/locationSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp"
+        android:minHeight="48dp"/>
+
+    <Button
+        android:id="@+id/addWidgetButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Widget"
+        android:minHeight="48dp"/>
+
+</LinearLayout> 
