@@ -3,13 +3,13 @@ package com.example.nepalweatherwidget.data.repository
 import com.example.nepalweatherwidget.core.error.ErrorHandler
 import com.example.nepalweatherwidget.core.error.WeatherException
 import com.example.nepalweatherwidget.core.extension.withNetworkRetry
-import com.example.nepalweatherwidget.core.monitor.NetworkMonitor
+import com.example.nepalweatherwidget.core.network.NetworkMonitor
 import com.example.nepalweatherwidget.core.result.Result
 import com.example.nepalweatherwidget.core.util.Logger
-import com.example.nepalweatherwidget.data.api.WeatherService
-import com.example.nepalweatherwidget.data.api.AirPollutionService
-import com.example.nepalweatherwidget.data.db.dao.WeatherDao
-import com.example.nepalweatherwidget.data.db.dao.AirQualityDao
+import com.example.nepalweatherwidget.data.remote.api.WeatherService
+import com.example.nepalweatherwidget.data.remote.api.AirPollutionService
+import com.example.nepalweatherwidget.data.local.dao.WeatherDao
+import com.example.nepalweatherwidget.data.local.dao.AirQualityDao
 import com.example.nepalweatherwidget.data.db.entity.WeatherEntity
 import com.example.nepalweatherwidget.data.db.entity.AirQualityEntity
 import com.example.nepalweatherwidget.data.remote.model.WeatherResponse
@@ -38,7 +38,7 @@ class WeatherRepositoryImpl @Inject constructor(
     override fun getWeatherData(location: String): Flow<Result<WeatherData>> = flow {
         try {
             // Check network availability
-            if (!networkMonitor.isOnline()) {
+            if (!networkMonitor.isNetworkAvailable()) {
                 Logger.w("WeatherRepository: Network unavailable, using cached data")
                 val cached = weatherDao.getLatestWeatherData().first()
                 if (cached != null) {
@@ -74,7 +74,7 @@ class WeatherRepositoryImpl @Inject constructor(
     override fun getAirQuality(location: String): Flow<Result<AirQualityData>> = flow {
         try {
             // Check network availability
-            if (!networkMonitor.isOnline()) {
+            if (!networkMonitor.isNetworkAvailable()) {
                 Logger.w("WeatherRepository: Network unavailable, using cached air quality data")
                 val cached = airQualityDao.getLatestAirQualityData().first()
                 if (cached != null) {

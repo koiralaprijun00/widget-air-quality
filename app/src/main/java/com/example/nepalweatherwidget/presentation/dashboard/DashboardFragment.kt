@@ -21,6 +21,7 @@ import com.example.nepalweatherwidget.core.extension.setVisibilitySafe
 import com.example.nepalweatherwidget.core.monitor.NetworkMonitor
 import com.example.nepalweatherwidget.core.util.Logger
 import com.example.nepalweatherwidget.databinding.FragmentDashboardBinding
+import com.example.nepalweatherwidget.presentation.model.WeatherUiState
 import com.example.nepalweatherwidget.presentation.model.AirQualityUiState
 import com.example.nepalweatherwidget.presentation.viewmodel.DashboardUiState
 import com.example.nepalweatherwidget.presentation.viewmodel.DashboardViewModel
@@ -181,7 +182,7 @@ class DashboardFragment : Fragment() {
         }
     }
 
-    private fun updateUI(weather: WeatherData, airQuality: AirQualityUiState) {
+    private fun updateUI(weather: WeatherUiState, airQuality: AirQualityUiState) {
         binding.apply {
             locationName.setTextSafe(currentLocation)
             locationSub.setTextResourceSafe(R.string.location_subtitle)
