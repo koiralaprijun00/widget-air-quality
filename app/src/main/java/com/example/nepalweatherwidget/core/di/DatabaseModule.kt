@@ -2,9 +2,9 @@ package com.example.nepalweatherwidget.core.di
 
 import android.content.Context
 import androidx.room.Room
-import com.example.nepalweatherwidget.data.local.WeatherDatabase
-import com.example.nepalweatherwidget.data.local.dao.AirQualityDao
-import com.example.nepalweatherwidget.data.local.dao.WeatherDao
+import com.example.nepalweatherwidget.features.weather.data.local.WeatherDatabase
+import com.example.nepalweatherwidget.features.weather.data.local.dao.AirQualityDao
+import com.example.nepalweatherwidget.features.weather.data.local.dao.WeatherDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -29,13 +29,11 @@ object DatabaseModule {
     }
 
     @Provides
-    @Singleton
     fun provideWeatherDao(database: WeatherDatabase): WeatherDao {
         return database.weatherDao()
     }
 
     @Provides
-    @Singleton
     fun provideAirQualityDao(database: WeatherDatabase): AirQualityDao {
         return database.airQualityDao()
     }
