@@ -1,13 +1,14 @@
 package com.example.nepalweatherwidget
 
 import android.os.Bundle
-import android.widget.EditText
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.example.nepalweatherwidget.ui.dashboard.DashboardFragment
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity(), SearchFragment.SearchListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,10 +26,12 @@ class MainActivity : AppCompatActivity(), SearchFragment.SearchListener {
                 }
                 R.id.nav_map -> {
                     loadFragment(MapFragment())
+                    fabSearch.hide()
                     true
                 }
                 R.id.nav_locations -> {
                     loadFragment(LocationsFragment())
+                    fabSearch.hide()
                     true
                 }
                 else -> false
@@ -58,6 +61,10 @@ class MainActivity : AppCompatActivity(), SearchFragment.SearchListener {
         val dashboardFragment = DashboardFragment()
         loadFragment(dashboardFragment)
         findViewById<FloatingActionButton>(R.id.fab_search).show()
-        dashboardFragment.updateLocation(location)
+        
+        // Use a post to ensure the fragment is attached
+        dashboardFragment.view?.post {
+            dashboardFragment.updateLocation(location)
+        }
     }
 } 

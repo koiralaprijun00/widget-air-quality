@@ -8,7 +8,7 @@
     <string name="error_unknown">An unknown error occurred</string>
     <string name="retry">Retry</string>
 
-    <string name="app_name">Air Quality Widget</string>
+    <string name="app_name">Nepal Weather Widget</string>
     
     <!-- Widget -->
     <string name="widget_description">Shows current air quality information</string>
@@ -18,7 +18,7 @@
     
     <!-- Location -->
     <string name="location_name">Kathmandu</string>
-    <string name="location_subtitle">Birmingham</string>
+    <string name="location_subtitle">Current Location</string>
     
     <!-- Location Names -->
     <string name="location_lalitpur">Lalitpur</string>

@@ -1,7 +1,7 @@
 package com.example.nepalweatherwidget.ui.dashboard
 
-import com.example.nepalweatherwidget.domain.model.AirQualityData
 import com.example.nepalweatherwidget.domain.model.WeatherData
+import com.example.nepalweatherwidget.domain.model.AirQualityData
 
 sealed class DashboardUiState {
     object Loading : DashboardUiState()
