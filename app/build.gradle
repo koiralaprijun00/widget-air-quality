@@ -49,8 +49,7 @@ android {
     kotlinOptions {
         jvmTarget = '17'
         freeCompilerArgs += [
-            "-Xjvm-default=all",
-            "-Xuse-k2"
+            "-Xjvm-default=all"
         ]
     }
 

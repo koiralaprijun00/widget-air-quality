@@ -14,6 +14,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
+import com.example.nepalweatherwidget.R
 import com.example.nepalweatherwidget.core.network.NetworkMonitor
 import com.example.nepalweatherwidget.features.dashboard.presentation.DashboardFragment
 import com.example.nepalweatherwidget.features.map.presentation.MapFragment
@@ -196,30 +197,5 @@ class MainActivity : AppCompatActivity(), SearchFragment.SearchListener {
         loadFragment(dashboardFragment)
         fabSearch.show()
         bottomNav.selectedItemId = R.id.nav_dashboard
-    }
-    
-    private fun showNetworkError() {
-        networkSnackbar?.dismiss()
-        networkSnackbar = Snackbar.make(
-            findViewById(android.R.id.content),
-            "No internet connection. Some features may be limited.",
-            Snackbar.LENGTH_INDEFINITE
-        ).apply {
-            setAction("Settings") {
-                // Open network settings
-                startActivity(Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS))
-            }
-            show()
-        }
-    }
-    
-    private fun dismissNetworkError() {
-        networkSnackbar?.dismiss()
-        networkSnackbar = null
-    }
-    
-    override fun onDestroy() {
-        networkSnackbar?.dismiss()
-        super.onDestroy()
     }
 } 
