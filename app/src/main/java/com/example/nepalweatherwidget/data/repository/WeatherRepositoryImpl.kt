@@ -1,6 +1,5 @@
 package com.example.nepalweatherwidget.data.repository
 
-import com.example.nepalweatherwidget.BuildConfig
 import com.example.nepalweatherwidget.data.local.dao.AirQualityDao
 import com.example.nepalweatherwidget.data.local.dao.WeatherDao
 import com.example.nepalweatherwidget.data.local.entity.AirQualityEntity
@@ -8,7 +7,7 @@ import com.example.nepalweatherwidget.data.local.entity.WeatherEntity
 import com.example.nepalweatherwidget.data.remote.api.AirPollutionService
 import com.example.nepalweatherwidget.data.remote.api.WeatherService
 import com.example.nepalweatherwidget.domain.exception.WeatherException
-import com.example.nepalweatherwidget.domain.model.AirQualityData
+import com.example.nepalweatherwidget.domain.model.AirQuality
 import com.example.nepalweatherwidget.domain.model.ApiResult
 import com.example.nepalweatherwidget.domain.model.WeatherData
 import com.example.nepalweatherwidget.domain.network.NetworkMonitor
@@ -20,16 +19,19 @@ import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class WeatherRepositoryImpl @Inject constructor(
     private val weatherService: WeatherService,
     private val airPollutionService: AirPollutionService,
     private val networkMonitor: NetworkMonitor,
     private val weatherDao: WeatherDao,
-    private val airQualityDao: AirQualityDao
+    private val airQualityDao: AirQualityDao,
+    private val apiKey: String
 ) : WeatherRepository {
 
-    override suspend fun getWeatherAndAirQuality(location: String): ApiResult<Pair<WeatherData, AirQualityData>> {
+    override suspend fun getWeatherAndAirQuality(location: String): ApiResult<Pair<WeatherData, AirQuality>> {
         return withContext(Dispatchers.IO) {
             if (!networkMonitor.isNetworkAvailable()) {
                 // Try to get cached data when offline
@@ -87,11 +89,7 @@ class WeatherRepositoryImpl @Inject constructor(
                     else -> ApiResult.Error(WeatherException.UnknownError("Failed to get weather data"))
                 }
             } catch (e: Exception) {
-                when (e) {
-                    is HttpException -> ApiResult.Error(WeatherException.ApiError(e.code(), e.message()))
-                    is IOException -> ApiResult.Error(WeatherException.NetworkError(e.message))
-                    else -> ApiResult.Error(WeatherException.UnknownError(e.message))
-                }
+                ApiResult.Error(WeatherException.UnknownError(e.message ?: "Unknown error occurred"))
             }
         }
     }
@@ -103,70 +101,37 @@ class WeatherRepositoryImpl @Inject constructor(
             }
 
             try {
-                val response = weatherService.getCurrentWeather(
-                    lat = lat,
-                    lon = lon,
-                    apiKey = BuildConfig.OPENWEATHER_API_KEY
-                )
-
-                if (response.weather.isEmpty()) {
-                    return@withContext ApiResult.Error(WeatherException.DataError("No weather data available"))
-                }
-
-                val weather = response.weather.first()
-                val weatherData = WeatherData(
-                    temperature = response.main.temp,
-                    feelsLike = response.main.feelsLike,
-                    description = weather.description,
-                    iconCode = weather.icon,
-                    humidity = response.main.humidity,
-                    windSpeed = response.wind.speed,
-                    timestamp = response.timestamp
-                )
-
-                ApiResult.Success(weatherData)
+                val response = weatherService.getCurrentWeather(lat, lon, apiKey)
+                ApiResult.Success(response.toWeatherData())
+            } catch (e: HttpException) {
+                ApiResult.Error(WeatherException.ApiError(e.code(), e.message()))
+            } catch (e: IOException) {
+                ApiResult.Error(WeatherException.NetworkError(e.message ?: "Network error occurred"))
             } catch (e: Exception) {
-                when (e) {
-                    is HttpException -> ApiResult.Error(WeatherException.ApiError(e.code(), e.message()))
-                    is IOException -> ApiResult.Error(WeatherException.NetworkError(e.message))
-                    else -> ApiResult.Error(WeatherException.UnknownError(e.message))
-                }
+                ApiResult.Error(WeatherException.UnknownError(e.message ?: "Unknown error occurred"))
             }
         }
     }
 
-    override suspend fun getAirQuality(lat: Double, lon: Double): ApiResult<AirQualityData> {
+    override suspend fun getAirQuality(lat: Double, lon: Double): ApiResult<AirQuality> {
         return withContext(Dispatchers.IO) {
             if (!networkMonitor.isNetworkAvailable()) {
                 return@withContext ApiResult.Error(WeatherException.NetworkError("No internet connection available"))
             }
 
             try {
-                val response = airPollutionService.getCurrentAirQuality(
-                    lat = lat,
-                    lon = lon,
-                    apiKey = BuildConfig.OPENWEATHER_API_KEY
-                )
-
-                if (response.airQualityList.isEmpty()) {
-                    return@withContext ApiResult.Error(WeatherException.DataError("No air quality data available"))
+                val response = airPollutionService.getCurrentAirQuality(lat, lon, apiKey)
+                if (response.list.isNotEmpty()) {
+                    ApiResult.Success(response.list[0].toAirQuality())
+                } else {
+                    ApiResult.Error(WeatherException.DataError("No air quality data available"))
                 }
-
-                val airQuality = response.airQualityList.first()
-                val airQualityData = AirQualityData(
-                    aqi = airQuality.main.aqi,
-                    pm25 = airQuality.components.pm25,
-                    pm10 = airQuality.components.pm10,
-                    timestamp = airQuality.timestamp
-                )
-
-                ApiResult.Success(airQualityData)
+            } catch (e: HttpException) {
+                ApiResult.Error(WeatherException.ApiError(e.code(), e.message()))
+            } catch (e: IOException) {
+                ApiResult.Error(WeatherException.NetworkError(e.message ?: "Network error occurred"))
             } catch (e: Exception) {
-                when (e) {
-                    is HttpException -> ApiResult.Error(WeatherException.ApiError(e.code(), e.message()))
-                    is IOException -> ApiResult.Error(WeatherException.NetworkError(e.message))
-                    else -> ApiResult.Error(WeatherException.UnknownError(e.message))
-                }
+                ApiResult.Error(WeatherException.UnknownError(e.message ?: "Unknown error occurred"))
             }
         }
     }
@@ -181,7 +146,7 @@ class WeatherRepositoryImpl @Inject constructor(
         timestamp = timestamp
     )
 
-    private fun AirQualityEntity.toAirQualityData() = AirQualityData(
+    private fun AirQualityEntity.toAirQualityData() = AirQuality(
         aqi = aqi,
         pm25 = pm25,
         pm10 = pm10,

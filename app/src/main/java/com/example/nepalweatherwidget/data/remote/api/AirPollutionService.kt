@@ -9,6 +9,6 @@ interface AirPollutionService {
     suspend fun getCurrentAirQuality(
         @Query("lat") lat: Double,
         @Query("lon") lon: Double,
-        @Query("appid") apiKey: String = BuildConfig.OPENWEATHER_API_KEY
+        @Query("appid") apiKey: String
     ): AirQualityResponse
 } 
