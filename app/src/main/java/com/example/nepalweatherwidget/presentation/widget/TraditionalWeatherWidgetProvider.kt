@@ -5,7 +5,8 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.widget.RemoteViews
 import com.example.nepalweatherwidget.R
-import com.example.nepalweatherwidget.core.util.ApiResult
+import com.example.nepalweatherwidget.domain.model.AirQuality
+import com.example.nepalweatherwidget.domain.model.WeatherData
 import com.example.nepalweatherwidget.domain.repository.WeatherRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -27,18 +28,15 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
         appWidgetIds: IntArray
     ) {
         coroutineScope.launch {
-            when (val result = weatherRepository.getWeatherAndAirQuality("Kathmandu")) {
-                is ApiResult.Success -> {
-                    val (weather, airQuality) = result.data
+            showLoading(context, appWidgetManager, appWidgetIds)
+            
+            weatherRepository.getWeatherAndAirQuality("Kathmandu")
+                .onSuccess { (weather, airQuality) ->
                     updateWidget(context, appWidgetManager, appWidgetIds, weather, airQuality)
                 }
-                is ApiResult.Error -> {
-                    showError(context, appWidgetManager, appWidgetIds, result.message)
+                .onFailure { exception ->
+                    showError(context, appWidgetManager, appWidgetIds, exception.message ?: "Unknown error")
                 }
-                is ApiResult.Loading -> {
-                    showLoading(context, appWidgetManager, appWidgetIds)
-                }
-            }
         }
     }
 

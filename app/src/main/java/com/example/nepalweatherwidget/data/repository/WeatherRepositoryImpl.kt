@@ -1,12 +1,12 @@
 package com.example.nepalweatherwidget.data.repository
 
-import com.example.nepalweatherwidget.core.util.NetworkException
 import com.example.nepalweatherwidget.data.local.dao.AirQualityDao
 import com.example.nepalweatherwidget.data.local.dao.WeatherDao
 import com.example.nepalweatherwidget.data.remote.api.AirPollutionService
 import com.example.nepalweatherwidget.data.remote.api.WeatherService
 import com.example.nepalweatherwidget.data.remote.mapper.AirQualityMapper.toAirQuality
 import com.example.nepalweatherwidget.data.remote.mapper.WeatherMapper.toWeatherData
+import com.example.nepalweatherwidget.domain.exception.WeatherException
 import com.example.nepalweatherwidget.domain.model.AirQuality
 import com.example.nepalweatherwidget.domain.model.WeatherData
 import com.example.nepalweatherwidget.core.network.NetworkMonitor
@@ -34,7 +34,7 @@ class WeatherRepositoryImpl @Inject constructor(
                 if (cached != null) {
                     return Result.success(cached.toWeatherData())
                 }
-                return Result.failure(NetworkException("No internet connection"))
+                return Result.failure(WeatherException.NetworkError("No internet connection"))
             }
             
             val response = weatherService.getCurrentWeather(lat, lon, apiKey)
@@ -57,12 +57,12 @@ class WeatherRepositoryImpl @Inject constructor(
                 if (cached != null) {
                     return Result.success(cached.toAirQuality())
                 }
-                return Result.failure(NetworkException("No internet connection"))
+                return Result.failure(WeatherException.NetworkError("No internet connection"))
             }
             
             val response = airPollutionService.getCurrentAirQuality(lat, lon, apiKey)
             val airQuality = response.list.firstOrNull()?.toAirQuality()
-                ?: return Result.failure(Exception("No air quality data available"))
+                ?: return Result.failure(WeatherException.DataError("No air quality data available"))
             
             // Cache the data
             airQualityDao.insertAirQuality(airQuality.toEntity(location = "$lat,$lon"))
@@ -85,7 +85,7 @@ class WeatherRepositoryImpl @Inject constructor(
             if (weatherResult.isSuccess && airQualityResult.isSuccess) {
                 Result.success(Pair(weatherResult.getOrNull()!!, airQualityResult.getOrNull()!!))
             } else {
-                Result.failure(Exception("Failed to get weather or air quality data"))
+                Result.failure(WeatherException.DataError("Failed to get weather or air quality data"))
             }
         } catch (e: Exception) {
             Result.failure(e)
