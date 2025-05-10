@@ -7,8 +7,13 @@ plugins {
 
 def secretsFile = rootProject.file("secrets.properties")
 def secrets = new Properties()
+
 if (secretsFile.exists()) {
     secrets.load(new FileInputStream(secretsFile))
+} else {
+    // Provide defaults for development
+    secrets.setProperty('openweather_api_key', '""')
+    println "WARNING: secrets.properties not found. Using empty API key. Please create secrets.properties with your API keys."
 }
 
 android {
