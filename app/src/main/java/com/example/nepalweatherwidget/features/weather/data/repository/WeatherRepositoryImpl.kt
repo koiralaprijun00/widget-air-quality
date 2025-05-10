@@ -11,8 +11,6 @@ import com.example.nepalweatherwidget.data.remote.api.WeatherService
 import com.example.nepalweatherwidget.data.remote.api.AirPollutionService
 import com.example.nepalweatherwidget.data.local.dao.WeatherDao
 import com.example.nepalweatherwidget.data.local.dao.AirQualityDao
-import com.example.nepalweatherwidget.data.local.entity.WeatherEntity
-import com.example.nepalweatherwidget.data.local.entity.AirQualityEntity
 import com.example.nepalweatherwidget.domain.model.WeatherData
 import com.example.nepalweatherwidget.domain.model.AirQuality
 import com.example.nepalweatherwidget.domain.model.Location
@@ -28,9 +26,9 @@ import kotlin.time.Duration.Companion.minutes
 import com.example.nepalweatherwidget.core.di.qualifiers.OpenWeatherApiKey
 import com.example.nepalweatherwidget.core.di.qualifiers.WeatherApiService
 import com.example.nepalweatherwidget.core.di.qualifiers.AirQualityApiService
-import com.example.nepalweatherwidget.features.weather.data.datasource.local.WeatherLocalDataSource
-import com.example.nepalweatherwidget.features.weather.data.datasource.remote.WeatherRemoteDataSource
-import com.example.nepalweatherwidget.features.weather.data.mapper.WeatherMapper
+import retrofit2.HttpException
+import java.net.UnknownHostException
+import java.net.SocketTimeoutException
 
 @Singleton
 class WeatherRepositoryImpl @Inject constructor(
@@ -42,41 +40,111 @@ class WeatherRepositoryImpl @Inject constructor(
     private val networkMonitor: NetworkMonitor,
     private val errorHandler: ErrorHandler,
     private val weatherCache: WeatherCache,
-    @OpenWeatherApiKey private val apiKey: String,
-    private val remoteDataSource: WeatherRemoteDataSource,
-    private val localDataSource: WeatherLocalDataSource,
-    private val weatherMapper: WeatherMapper
+    @OpenWeatherApiKey private val apiKey: String
 ) : WeatherRepository {
-    
+
     companion object {
         private const val TAG = "WeatherRepository"
         private val CACHE_VALIDITY = 30.minutes
         private const val CACHE_STALE_THRESHOLD_HOURS = 2L
+        private const val MAX_RETRY_ATTEMPTS = 3
     }
-    
+
     override suspend fun getWeatherData(locationName: String): Result<WeatherData> {
         return try {
-            // Try remote first
-            val remoteResult = remoteDataSource.getWeatherData(locationName)
-            
-            if (remoteResult is Result.Success) {
-                // Cache the data
-                localDataSource.saveWeatherData(remoteResult.data)
-                Result.Success(weatherMapper.toDomain(remoteResult.data))
-            } else {
-                // Fallback to cache
-                val cachedData = localDataSource.getWeatherData(locationName)
-                if (cachedData != null) {
-                    Result.Success(weatherMapper.toDomain(cachedData))
-                } else {
-                    remoteResult
+            if (!networkMonitor.isNetworkAvailable()) {
+                return getCachedWeatherData(locationName) 
+                    ?: Result.Error(WeatherException.NetworkException.NoInternet)
+            }
+
+            withNetworkRetry(maxAttempts = MAX_RETRY_ATTEMPTS) {
+                val locationResult = geocodingRepository.getLocationByName(locationName)
+                when (locationResult) {
+                    is Result.Success -> {
+                        val location = locationResult.data
+                        val response = weatherService.getCurrentWeather(
+                            lat = location.latitude,
+                            lon = location.longitude,
+                            apiKey = apiKey
+                        )
+                        val weatherData = WeatherData(
+                            temperature = response.main.temp,
+                            feelsLike = response.main.feelsLike,
+                            description = response.weather.firstOrNull()?.description ?: "",
+                            iconCode = response.weather.firstOrNull()?.icon ?: "",
+                            humidity = response.main.humidity,
+                            windSpeed = response.wind.speed,
+                            timestamp = System.currentTimeMillis(),
+                            location = locationName
+                        )
+                        
+                        // Cache the successful response
+                        saveWeatherToCache(locationName, weatherData)
+                        
+                        Result.Success(weatherData)
+                    }
+                    is Result.Error -> locationResult
                 }
             }
         } catch (e: Exception) {
-            Result.Error(WeatherException.UnknownError(e.message ?: ""))
+            handleWeatherError(e, locationName)
         }
     }
-    
+
+    private fun handleWeatherError(error: Exception, locationName: String): Result.Error {
+        return when (error) {
+            is UnknownHostException -> Result.Error(WeatherException.NetworkException.UnknownHost())
+            is SocketTimeoutException -> Result.Error(WeatherException.NetworkException.Timeout())
+            is HttpException -> {
+                when (error.code()) {
+                    401 -> Result.Error(WeatherException.ApiException.InvalidApiKey())
+                    404 -> Result.Error(WeatherException.LocationException.LocationNotFound(locationName))
+                    429 -> Result.Error(WeatherException.ApiException.RateLimitExceeded())
+                    in 500..599 -> Result.Error(WeatherException.ApiException.ServerError())
+                    else -> Result.Error(WeatherException.ApiException.HttpError(error.code(), error.message()))
+                }
+            }
+            else -> Result.Error(WeatherException.UnknownError(error.message ?: "Unknown error occurred"))
+        }
+    }
+
+    private suspend fun getCachedWeatherData(locationName: String): Result<WeatherData>? {
+        return try {
+            val cachedData = weatherDao.getWeatherByLocation(locationName).first()
+            if (cachedData != null && isCacheValid(cachedData.timestamp)) {
+                Result.Success(cachedData.toWeatherData())
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Logger.e("Failed to get cached weather data", e)
+            null
+        }
+    }
+
+    private suspend fun saveWeatherToCache(locationName: String, weatherData: WeatherData) {
+        try {
+            val entity = WeatherEntity(
+                location = locationName,
+                temperature = weatherData.temperature,
+                feelsLike = weatherData.feelsLike,
+                description = weatherData.description,
+                iconCode = weatherData.iconCode,
+                humidity = weatherData.humidity,
+                windSpeed = weatherData.windSpeed,
+                timestamp = System.currentTimeMillis()
+            )
+            weatherDao.insertWeather(entity)
+        } catch (e: Exception) {
+            Logger.e("Failed to cache weather data", e)
+        }
+    }
+
+    private fun isCacheValid(timestamp: Long): Boolean {
+        val age = System.currentTimeMillis() - timestamp
+        return age < TimeUnit.HOURS.toMillis(CACHE_STALE_THRESHOLD_HOURS)
+    }
+
     override suspend fun getAirQuality(locationName: String): Result<AirQuality> {
         return weatherCache.getOrFetch(
             key = "air_quality_$locationName",
@@ -105,16 +173,27 @@ class WeatherRepositoryImpl @Inject constructor(
     
     override suspend fun getWeatherDataByCoordinates(lat: Double, lon: Double): Result<WeatherData> {
         return try {
-            val remoteResult = remoteDataSource.getWeatherByCoordinates(lat, lon)
-            
-            if (remoteResult is Result.Success) {
-                localDataSource.saveWeatherData(remoteResult.data)
-                Result.Success(weatherMapper.toDomain(remoteResult.data))
-            } else {
-                remoteResult
+            if (!networkMonitor.isNetworkAvailable()) {
+                return Result.Error(WeatherException.NetworkException.NoInternet)
             }
+
+            val response = withNetworkRetry {
+                weatherService.getCurrentWeather(lat, lon, apiKey)
+            }
+
+            val weatherData = WeatherData(
+                temperature = response.main.temp,
+                feelsLike = response.main.feelsLike,
+                description = response.weather.firstOrNull()?.description ?: "",
+                iconCode = response.weather.firstOrNull()?.icon ?: "",
+                humidity = response.main.humidity,
+                windSpeed = response.wind.speed,
+                timestamp = System.currentTimeMillis()
+            )
+
+            Result.Success(weatherData)
         } catch (e: Exception) {
-            Result.Error(WeatherException.UnknownError(e.message ?: ""))
+            handleWeatherError(e, "coordinates($lat,$lon)")
         }
     }
     
@@ -146,15 +225,20 @@ class WeatherRepositoryImpl @Inject constructor(
     
     override suspend fun getForecast(locationName: String, days: Int): Result<List<WeatherData>> {
         return try {
-            val remoteResult = remoteDataSource.getForecast(locationName)
-            
-            if (remoteResult is Result.Success) {
-                Result.Success(weatherMapper.toDomain(remoteResult.data))
-            } else {
-                remoteResult
+            if (!networkMonitor.isNetworkAvailable()) {
+                return Result.Error(WeatherException.NetworkException.NoInternet)
+            }
+
+            val locationResult = geocodingRepository.getLocationByName(locationName)
+            when (locationResult) {
+                is Result.Success -> {
+                    val location = locationResult.data
+                    getForecastByCoordinates(location.latitude, location.longitude, days)
+                }
+                is Result.Error -> locationResult
             }
         } catch (e: Exception) {
-            Result.Error(WeatherException.UnknownError(e.message ?: ""))
+            handleWeatherError(e, locationName)
         }
     }
     
@@ -176,13 +260,13 @@ class WeatherRepositoryImpl @Inject constructor(
                     iconCode = forecastItem.weather.firstOrNull()?.icon ?: "",
                     humidity = forecastItem.main.humidity,
                     windSpeed = forecastItem.wind.speed,
-                    timestamp = forecastItem.dt * 1000 // Convert to milliseconds
+                    timestamp = forecastItem.dt * 1000
                 )
             }
 
             Result.Success(forecastData)
         } catch (e: Exception) {
-            errorHandler.handleError(e)
+            handleWeatherError(e, "coordinates($lat,$lon)")
         }
     }
     
@@ -222,23 +306,22 @@ class WeatherRepositoryImpl @Inject constructor(
     
     override suspend fun clearCache(): Result<Unit> {
         return try {
-            localDataSource.clearCache()
+            weatherDao.clearAll()
+            airQualityDao.clearAll()
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(WeatherException.UnknownError(e.message ?: ""))
         }
     }
     
-    // Private helper methods
     private suspend fun fetchAirQuality(locationName: String): Result<AirQuality> {
         return try {
             if (!networkMonitor.isNetworkAvailable()) {
                 return tryGetCachedAirQuality(locationName) ?: Result.Error(WeatherException.NetworkException.NoInternet)
             }
             
-            // Get coordinates for location
             val locationResult = geocodingRepository.getLocationByName(locationName)
-            return when (locationResult) {
+            when (locationResult) {
                 is Result.Success -> {
                     val location = locationResult.data
                     fetchAirQualityByCoordinates(location.latitude, location.longitude)
@@ -270,8 +353,7 @@ class WeatherRepositoryImpl @Inject constructor(
                 timestamp = System.currentTimeMillis()
             )
             
-            // Save to local database
-            saveAirQualityToLocal("", airQuality) // TODO: Get location name
+            saveAirQualityToLocal("", airQuality)
             
             Result.Success(airQuality)
         } catch (e: Exception) {
@@ -314,7 +396,6 @@ class WeatherRepositoryImpl @Inject constructor(
     }
 }
 
-// Extension functions
 fun WeatherEntity.toWeatherData(): WeatherData {
     return WeatherData(
         temperature = temperature,
@@ -334,4 +415,4 @@ fun AirQualityEntity.toAirQuality(): AirQuality {
         pm10 = pm10,
         timestamp = timestamp
     )
-} 
+}
