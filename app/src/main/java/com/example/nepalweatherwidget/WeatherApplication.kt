@@ -3,7 +3,7 @@ package com.example.nepalweatherwidget
 import android.app.Application
 import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
-import androidx.hilt.work.HiltWorkerFactory
+import com.example.nepalweatherwidget.core.di.HiltWorkerFactory
 import javax.inject.Inject
 
 @HiltAndroidApp

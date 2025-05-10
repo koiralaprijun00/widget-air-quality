@@ -5,7 +5,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.example.nepalweatherwidget.ui.dashboard.DashboardFragment
+import com.example.nepalweatherwidget.presentation.ui.dashboard.DashboardFragment
+import com.example.nepalweatherwidget.presentation.ui.map.MapFragment
+import com.example.nepalweatherwidget.presentation.ui.locations.LocationsFragment
+import com.example.nepalweatherwidget.presentation.ui.search.SearchFragment
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -45,7 +48,7 @@ class MainActivity : AppCompatActivity(), SearchFragment.SearchListener {
 
         fabSearch.setOnClickListener {
             // Navigate to SearchFragment
-            loadFragment(SearchFragment())
+            loadFragment(SearchFragment.newInstance(this))
             fabSearch.hide()
         }
     }
@@ -58,13 +61,8 @@ class MainActivity : AppCompatActivity(), SearchFragment.SearchListener {
 
     override fun onLocationSearched(location: String) {
         // After search, return to dashboard and update location
-        val dashboardFragment = DashboardFragment()
+        val dashboardFragment = DashboardFragment.newInstance(location)
         loadFragment(dashboardFragment)
         findViewById<FloatingActionButton>(R.id.fab_search).show()
-        
-        // Use a post to ensure the fragment is attached
-        dashboardFragment.view?.post {
-            dashboardFragment.updateLocation(location)
-        }
     }
 } 

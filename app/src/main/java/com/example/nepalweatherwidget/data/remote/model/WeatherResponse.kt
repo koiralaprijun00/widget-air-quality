@@ -12,7 +12,7 @@ data class WeatherResponse(
     @SerializedName("wind")
     val wind: Wind,
     @SerializedName("name")
-    val cityName: String,
+    val name: String,
     @SerializedName("dt")
     val timestamp: Long
 ) {
@@ -36,7 +36,7 @@ data class WeatherResponse(
 
     data class Main(
         @SerializedName("temp")
-        val temperature: Double,
+        val temp: Double,
         @SerializedName("feels_like")
         val feelsLike: Double,
         @SerializedName("temp_min")
