@@ -1,8 +1,8 @@
 package com.example.nepalweatherwidget
 
 import android.app.Application
+import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
-import com.example.nepalweatherwidget.core.di.HiltWorkerFactory
 import com.example.nepalweatherwidget.core.security.ApiKeyInitializer
 import com.example.nepalweatherwidget.core.util.Logger
 import dagger.hilt.android.HiltAndroidApp

@@ -1,4 +1,4 @@
-package com.example.nepalweatherwidget.core.di
+package com.example.nepalweatherwidget.core.di.modules
 
 import android.content.Context
 import androidx.work.Configuration
@@ -52,7 +52,7 @@ object WorkerModule {
     @Provides
     @Singleton
     fun provideWorkManagerConfiguration(
-        workerFactory: HiltWorkerFactory
+        workerFactory: WorkerFactory
     ): Configuration {
         return Configuration.Builder()
             .setWorkerFactory(workerFactory)
