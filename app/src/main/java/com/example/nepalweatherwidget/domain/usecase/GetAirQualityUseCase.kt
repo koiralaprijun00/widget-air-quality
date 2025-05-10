@@ -1,14 +1,10 @@
 package com.example.nepalweatherwidget.domain.usecase
 
-import com.example.widget_air_quality.data.repository.AirPollutionRepository
+import com.example.nepalweatherwidget.domain.repository.WeatherRepository
 import javax.inject.Inject
 
 class GetAirQualityUseCase @Inject constructor(
-    private val repository: AirPollutionRepository
+    private val weatherRepository: WeatherRepository
 ) {
-    suspend fun getCurrentAirQuality(lat: Double, lon: Double) = 
-        repository.getCurrentAirPollution(lat, lon)
-
-    suspend fun getAirQualityForecast(lat: Double, lon: Double) =
-        repository.getAirPollutionForecast(lat, lon)
+    suspend operator fun invoke(lat: Double, lon: Double) = weatherRepository.getAirQuality(lat, lon)
 } 

@@ -10,8 +10,10 @@ import android.util.Log
 import android.widget.RemoteViews
 import com.example.nepalweatherwidget.MainActivity
 import com.example.nepalweatherwidget.R
-import com.example.nepalweatherwidget.domain.usecase.GetWeatherUseCase
-import com.example.nepalweatherwidget.domain.usecase.GetAirQualityUseCase
+import com.example.nepalweatherwidget.core.util.ApiResult
+import com.example.nepalweatherwidget.domain.model.AirQuality
+import com.example.nepalweatherwidget.domain.model.WeatherData
+import com.example.nepalweatherwidget.domain.repository.WeatherRepository
 import com.example.nepalweatherwidget.worker.WeatherUpdateWorker
 import com.example.widget_air_quality.data.model.AirQualityIndex
 import dagger.hilt.android.AndroidEntryPoint
@@ -25,18 +27,28 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
     private val tag = "TraditionalWidget"
     
     @Inject
-    lateinit var getAirQualityUseCase: GetAirQualityUseCase
+    lateinit var weatherRepository: WeatherRepository
+
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        Log.d(tag, "onUpdate called with ${appWidgetIds.size} widgets")
-        
-        // Update each widget
-        appWidgetIds.forEach { widgetId ->
-            updateWidget(context, appWidgetManager, widgetId)
+        coroutineScope.launch {
+            when (val result = weatherRepository.getWeatherAndAirQuality("Kathmandu")) {
+                is ApiResult.Success -> {
+                    val (weather, airQuality) = result.data
+                    updateWidget(context, appWidgetManager, appWidgetIds, weather, airQuality)
+                }
+                is ApiResult.Error -> {
+                    showError(context, appWidgetManager, appWidgetIds, result.message)
+                }
+                is ApiResult.Loading -> {
+                    showLoading(context, appWidgetManager, appWidgetIds)
+                }
+            }
         }
     }
     
@@ -50,104 +62,52 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
         updateWidget(context, appWidgetManager, appWidgetId)
     }
     
-    private fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, widgetId: Int) {
-        try {
-            Log.d(tag, "Updating widget ID: $widgetId")
+    private fun updateWidget(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray,
+        weather: WeatherData,
+        airQuality: AirQuality
+    ) {
+        appWidgetIds.forEach { appWidgetId ->
+            val views = RemoteViews(context.packageName, R.layout.widget_weather)
             
-            // Get widget dimensions
-            val options = appWidgetManager.getAppWidgetOptions(widgetId)
-            val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
-            val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
-            
-            // Choose layout based on size
-            val layout = when {
-                minWidth >= 250 && minHeight >= 250 -> R.layout.widget_layout_large
-                minWidth >= 180 && minHeight >= 110 -> R.layout.widget_layout_medium
-                else -> R.layout.widget_layout_small
-            }
-            
-            // Get weather data
-            val weatherData = GetWeatherUseCase.getMockWeatherData()
-            Log.d(tag, "Got weather data: $weatherData")
-            
-            // Create a RemoteViews for the widget layout
-            val views = RemoteViews(context.packageName, layout)
-            
-            // Set the weather data
-            views.setTextViewText(R.id.location, weatherData.location)
-            views.setTextViewText(R.id.temperature, "${weatherData.temperature}°C")
-            views.setTextViewText(R.id.weather_description, weatherData.description)
-            views.setTextViewText(R.id.humidity, "${weatherData.humidity}%")
-            views.setTextViewText(R.id.wind_speed, "${weatherData.windSpeed} m/s")
-            
-            // Fetch and set real air quality data
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    val airQualityResult = getAirQualityUseCase.getCurrentAirQuality(
-                        lat = 27.7172, // Kathmandu coordinates
-                        lon = 85.3240
-                    )
-                    
-                    airQualityResult.onSuccess { response ->
-                        response.list.firstOrNull()?.let { airData ->
-                            val aqi = airData.main.aqi
-                            val aqiIndex = AirQualityIndex.fromValue(aqi)
-                            
-                            views.setTextViewText(R.id.aqi_value, aqi.toString())
-                            views.setTextViewText(R.id.aqi_description, aqiIndex.description)
-                            
-                            // Set additional data for large layout
-                            if (layout == R.layout.widget_layout_large) {
-                                views.setTextViewText(R.id.pm25_value, 
-                                    "PM2.5: ${String.format("%.1f", airData.components.pm2_5)} μg/m³")
-                                views.setTextViewText(R.id.weather_details, 
-                                    "Feels like ${weatherData.temperature + 2}°C")
-                                views.setTextViewText(R.id.wind_direction, "North East")
-                                views.setTextViewText(R.id.humidity_description, 
-                                    getHumidityDescription(weatherData.humidity))
-                            }
-                            
-                            // Update the widget
-                            appWidgetManager.updateAppWidget(widgetId, views)
-                        }
-                    }.onFailure { error ->
-                        Log.e(tag, "Error fetching air quality data", error)
-                        // Set default values in case of error
-                        views.setTextViewText(R.id.aqi_value, "N/A")
-                        views.setTextViewText(R.id.aqi_description, "Data unavailable")
-                        appWidgetManager.updateAppWidget(widgetId, views)
-                    }
-                } catch (e: Exception) {
-                    Log.e(tag, "Error updating widget with air quality data", e)
-                    views.setTextViewText(R.id.aqi_value, "N/A")
-                    views.setTextViewText(R.id.aqi_description, "Data unavailable")
-                    appWidgetManager.updateAppWidget(widgetId, views)
-                }
-            }
-            
-            // Set up click intent for the entire widget
-            val intent = Intent(context, MainActivity::class.java)
-            val pendingIntent = PendingIntent.getActivity(
-                context,
-                0,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
-            
-            // Initial update with weather data
-            appWidgetManager.updateAppWidget(widgetId, views)
-            Log.d(tag, "Widget ID $widgetId updated successfully with layout: $layout")
-        } catch (e: Exception) {
-            Log.e(tag, "Error updating widget ID $widgetId", e)
+            views.setTextViewText(R.id.temperature, "${weather.temperature}°C")
+            views.setTextViewText(R.id.description, weather.description)
+            views.setTextViewText(R.id.humidity, "Humidity: ${weather.humidity}%")
+            views.setTextViewText(R.id.wind_speed, "Wind: ${weather.windSpeed} m/s")
+            views.setTextViewText(R.id.aqi, "AQI: ${airQuality.aqi}")
+            views.setTextViewText(R.id.pm25, "PM2.5: ${airQuality.pm25}")
+            views.setTextViewText(R.id.pm10, "PM10: ${airQuality.pm10}")
+
+            appWidgetManager.updateAppWidget(appWidgetId, views)
         }
     }
-    
-    private fun getHumidityDescription(humidity: Int): String {
-        return when {
-            humidity < 30 -> "Dry"
-            humidity < 60 -> "Comfortable"
-            else -> "Humid"
+
+    private fun showError(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray,
+        message: String
+    ) {
+        appWidgetIds.forEach { appWidgetId ->
+            val views = RemoteViews(context.packageName, R.layout.widget_weather)
+            views.setTextViewText(R.id.temperature, "Error")
+            views.setTextViewText(R.id.description, message)
+            appWidgetManager.updateAppWidget(appWidgetId, views)
+        }
+    }
+
+    private fun showLoading(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        appWidgetIds.forEach { appWidgetId ->
+            val views = RemoteViews(context.packageName, R.layout.widget_weather)
+            views.setTextViewText(R.id.temperature, "Loading...")
+            views.setTextViewText(R.id.description, "Please wait")
+            appWidgetManager.updateAppWidget(appWidgetId, views)
         }
     }
     
