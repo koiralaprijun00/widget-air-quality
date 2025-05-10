@@ -16,6 +16,15 @@ import javax.inject.Singleton
 interface NetworkMonitor {
     val isOnline: Flow<Boolean>
     fun isNetworkAvailable(): Boolean
+    fun getNetworkType(): NetworkType
+}
+
+enum class NetworkType {
+    WIFI,
+    CELLULAR,
+    ETHERNET,
+    VPN,
+    NONE
 }
 
 @Singleton
@@ -26,27 +35,41 @@ class NetworkMonitorImpl @Inject constructor(
 
     override val isOnline: Flow<Boolean> = callbackFlow {
         val callback = object : ConnectivityManager.NetworkCallback() {
-            private val networks = mutableSetOf<Network>()
+            private val activeNetworks = mutableSetOf<Network>()
 
             override fun onAvailable(network: Network) {
-                networks.add(network)
+                activeNetworks.add(network)
                 trySend(true)
             }
 
             override fun onLost(network: Network) {
-                networks.remove(network)
-                trySend(networks.isNotEmpty())
+                activeNetworks.remove(network)
+                trySend(activeNetworks.isNotEmpty())
+            }
+
+            override fun onCapabilitiesChanged(
+                network: Network,
+                networkCapabilities: NetworkCapabilities
+            ) {
+                if (networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
+                    activeNetworks.add(network)
+                } else {
+                    activeNetworks.remove(network)
+                }
+                trySend(activeNetworks.isNotEmpty())
             }
         }
 
         val request = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
             .build()
 
         connectivityManager.registerNetworkCallback(request, callback)
 
         // Set initial value
-        trySend(connectivityManager.isCurrentlyConnected())
+        trySend(isNetworkAvailable())
 
         awaitClose {
             connectivityManager.unregisterNetworkCallback(callback)
@@ -54,10 +77,23 @@ class NetworkMonitorImpl @Inject constructor(
     }.distinctUntilChanged()
 
     override fun isNetworkAvailable(): Boolean {
-        return connectivityManager.isCurrentlyConnected()
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+               capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
-    private fun ConnectivityManager.isCurrentlyConnected() = getNetworkCapabilities(activeNetwork)?.hasCapability(
-        NetworkCapabilities.NET_CAPABILITY_INTERNET
-    ) == true
-} 
+    override fun getNetworkType(): NetworkType {
+        val network = connectivityManager.activeNetwork ?: return NetworkType.NONE
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return NetworkType.NONE
+
+        return when {
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> NetworkType.WIFI
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> NetworkType.CELLULAR
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> NetworkType.ETHERNET
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> NetworkType.VPN
+            else -> NetworkType.NONE
+        }
+    }
+}
