@@ -1,11 +1,14 @@
 package com.example.nepalweatherwidget.data.repository
 
+import com.example.nepalweatherwidget.core.util.ApiResult
 import com.example.nepalweatherwidget.data.local.dao.AirQualityDao
 import com.example.nepalweatherwidget.data.local.dao.WeatherDao
 import com.example.nepalweatherwidget.data.local.entity.AirQualityEntity
 import com.example.nepalweatherwidget.data.local.entity.WeatherEntity
 import com.example.nepalweatherwidget.data.remote.api.AirPollutionService
 import com.example.nepalweatherwidget.data.remote.api.WeatherService
+import com.example.nepalweatherwidget.data.remote.mapper.AirQualityMapper
+import com.example.nepalweatherwidget.data.remote.mapper.WeatherMapper
 import com.example.nepalweatherwidget.domain.exception.WeatherException
 import com.example.nepalweatherwidget.domain.model.AirQuality
 import com.example.nepalweatherwidget.domain.model.ApiResult
@@ -19,6 +22,7 @@ import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Singleton

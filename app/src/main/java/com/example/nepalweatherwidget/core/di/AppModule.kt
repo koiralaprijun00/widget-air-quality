@@ -8,7 +8,8 @@ import dagger.hilt.components.SingletonComponent
     includes = [
         NetworkModule::class,
         RepositoryModule::class,
-        NetworkMonitorModule::class
+        NetworkMonitorModule::class,
+        ApiModule::class
     ]
 )
 @InstallIn(SingletonComponent::class)
