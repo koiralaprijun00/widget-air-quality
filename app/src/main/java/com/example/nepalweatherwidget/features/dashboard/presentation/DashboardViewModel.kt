@@ -5,13 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.nepalweatherwidget.core.error.WeatherException
 import com.example.nepalweatherwidget.core.network.NetworkMonitor
 import com.example.nepalweatherwidget.core.result.Result
-import com.example.nepalweatherwidget.features.dashboard.domain.model.ForecastItem
-import com.example.nepalweatherwidget.features.dashboard.domain.model.Location
-import com.example.nepalweatherwidget.features.dashboard.domain.model.LocationItem
-import com.example.nepalweatherwidget.features.dashboard.domain.model.WeatherData
-import com.example.nepalweatherwidget.features.dashboard.domain.repository.GeocodingRepository
-import com.example.nepalweatherwidget.features.dashboard.domain.repository.WeatherRepository
-import com.example.nepalweatherwidget.features.dashboard.presentation.model.AirQualityUiState
+import com.example.nepalweatherwidget.features.locations.domain.model.LocationItem
+import com.example.nepalweatherwidget.features.locations.domain.usecase.GetOtherLocationsWeatherUseCase
+import com.example.nepalweatherwidget.features.weather.domain.model.ForecastItem
+import com.example.nepalweatherwidget.features.weather.domain.model.WeatherData
+import com.example.nepalweatherwidget.features.weather.domain.usecase.GetForecastUseCase
+import com.example.nepalweatherwidget.features.weather.domain.usecase.GetWeatherWithAirQualityUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.channels.Channel
@@ -41,8 +40,9 @@ sealed class DashboardUiState {
 @HiltViewModel
 @ViewModelScoped
 class DashboardViewModel @Inject constructor(
-    private val weatherRepository: WeatherRepository,
-    private val geocodingRepository: GeocodingRepository,
+    private val getWeatherWithAirQualityUseCase: GetWeatherWithAirQualityUseCase,
+    private val getForecastUseCase: GetForecastUseCase,
+    private val getOtherLocationsWeatherUseCase: GetOtherLocationsWeatherUseCase,
     private val networkMonitor: NetworkMonitor
 ) : ViewModel() {
     
@@ -68,13 +68,31 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = DashboardUiState.Loading
             
-            when (val result = weatherRepository.getWeatherAndAirQuality(location)) {
+            // Get weather and air quality
+            when (val result = getWeatherWithAirQualityUseCase(location)) {
                 is Result.Success -> {
                     val (weather, airQuality) = result.data
+                    
+                    // Get forecast
+                    val forecastResult = getForecastUseCase(location)
+                    val forecast = when (forecastResult) {
+                        is Result.Success -> forecastResult.data
+                        is Result.Error -> emptyList()
+                    }
+                    
+                    // Get other locations
+                    val otherLocationsResult = getOtherLocationsWeatherUseCase(
+                        listOf("Pokhara", "Lalitpur", "Bhaktapur", "Chitwan")
+                    )
+                    val otherLocations = when (otherLocationsResult) {
+                        is Result.Success -> otherLocationsResult.data
+                        is Result.Error -> emptyList()
+                    }
+                    
                     _uiState.value = DashboardUiState.Success(
                         weather = weather,
-                        forecast = getMockForecast(), // TODO: Implement real forecast
-                        otherLocations = getMockOtherLocations() // TODO: Implement real other locations
+                        forecast = forecast,
+                        otherLocations = otherLocations
                     )
                 }
                 is Result.Error -> {
@@ -94,20 +112,39 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = DashboardUiState.Loading
             
-            when (val result = weatherRepository.getWeatherAndAirQualityByCoordinates(latitude, longitude)) {
+            // Get location name from coordinates
+            val locationResult = getWeatherWithAirQualityUseCase("$latitude,$longitude")
+            when (locationResult) {
                 is Result.Success -> {
-                    val (weather, airQuality) = result.data
+                    val (weather, airQuality) = locationResult.data
+                    
+                    // Get forecast
+                    val forecastResult = getForecastUseCase("$latitude,$longitude")
+                    val forecast = when (forecastResult) {
+                        is Result.Success -> forecastResult.data
+                        is Result.Error -> emptyList()
+                    }
+                    
+                    // Get other locations
+                    val otherLocationsResult = getOtherLocationsWeatherUseCase(
+                        listOf("Pokhara", "Lalitpur", "Bhaktapur", "Chitwan")
+                    )
+                    val otherLocations = when (otherLocationsResult) {
+                        is Result.Success -> otherLocationsResult.data
+                        is Result.Error -> emptyList()
+                    }
+                    
                     _uiState.value = DashboardUiState.Success(
                         weather = weather,
-                        forecast = getMockForecast(), // TODO: Implement real forecast
-                        otherLocations = getMockOtherLocations() // TODO: Implement real other locations
+                        forecast = forecast,
+                        otherLocations = otherLocations
                     )
                 }
                 is Result.Error -> {
                     _uiState.value = DashboardUiState.Error(
-                        message = result.exception.message ?: "Unknown error",
-                        exception = result.exception,
-                        canRetry = result.exception !is WeatherException.ApiException.InvalidApiKey
+                        message = locationResult.exception.message ?: "Unknown error",
+                        exception = locationResult.exception,
+                        canRetry = locationResult.exception !is WeatherException.ApiException.InvalidApiKey
                     )
                 }
             }
@@ -130,25 +167,5 @@ class DashboardViewModel @Inject constructor(
     
     fun onForecastItemClicked(forecastItem: ForecastItem) {
         // TODO: Implement forecast item click
-    }
-    
-    // Mock data for now
-    private fun getMockForecast(): List<ForecastItem> {
-        return listOf(
-            ForecastItem("9:00", 22.0, 45, "😊", android.R.drawable.ic_dialog_info),
-            ForecastItem("12:00", 25.0, 65, "😐", android.R.drawable.ic_dialog_info),
-            ForecastItem("15:00", 26.0, 85, "😷", android.R.drawable.ic_dialog_info),
-            ForecastItem("18:00", 23.0, 72, "😷", android.R.drawable.ic_dialog_info),
-            ForecastItem("21:00", 20.0, 55, "😐", android.R.drawable.ic_dialog_info)
-        )
-    }
-    
-    private fun getMockOtherLocations(): List<LocationItem> {
-        return listOf(
-            LocationItem("Pokhara", 20.0, "Gandaki"),
-            LocationItem("Lalitpur", 22.0, "Bagmati"),
-            LocationItem("Bhaktapur", 21.0, "Bagmati"),
-            LocationItem("Chitwan", 28.0, "Narayani")
-        )
     }
 } 
