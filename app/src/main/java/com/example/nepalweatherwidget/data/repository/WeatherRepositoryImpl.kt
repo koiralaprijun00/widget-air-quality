@@ -9,7 +9,7 @@ import com.example.nepalweatherwidget.data.remote.mapper.AirQualityMapper.toAirQ
 import com.example.nepalweatherwidget.data.remote.mapper.WeatherMapper.toWeatherData
 import com.example.nepalweatherwidget.domain.model.AirQuality
 import com.example.nepalweatherwidget.domain.model.WeatherData
-import com.example.nepalweatherwidget.domain.network.NetworkMonitor
+import com.example.nepalweatherwidget.core.network.NetworkMonitor
 import com.example.nepalweatherwidget.domain.repository.WeatherRepository
 import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
