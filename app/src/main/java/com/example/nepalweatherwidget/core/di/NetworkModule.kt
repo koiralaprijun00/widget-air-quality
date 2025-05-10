@@ -1,5 +1,6 @@
 package com.example.nepalweatherwidget.core.di
 
+import com.example.nepalweatherwidget.core.security.ApiKeyManager
 import com.example.nepalweatherwidget.features.weather.data.remote.api.AirPollutionService
 import com.example.nepalweatherwidget.features.weather.data.remote.api.GeocodingService
 import com.example.nepalweatherwidget.features.weather.data.remote.api.WeatherService
@@ -7,6 +8,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import okhttp3.CertificatePinner
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
@@ -14,12 +17,41 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    
+    @Provides
+    @Singleton
+    fun provideCertificatePinner(): CertificatePinner {
+        return CertificatePinner.Builder()
+            .add("api.openweathermap.org", 
+                 "sha256/axmGTWYycVN5oCjh3GJrxWVndLSZjypDO6evrHMwbXg=") // Real hash for OpenWeather API
+            .build()
+    }
 
     @Provides
     @Singleton
-    fun provideRetrofit(): Retrofit {
+    fun provideOkHttpClient(
+        apiKeyManager: ApiKeyManager,
+        certificatePinner: CertificatePinner
+    ): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val apiKey = apiKeyManager.getApiKey()
+                val url = chain.request().url.newBuilder()
+                    .addQueryParameter("appid", apiKey)
+                    .build()
+                
+                chain.proceed(chain.request().newBuilder().url(url).build())
+            }
+            .certificatePinner(certificatePinner)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
             .baseUrl("https://api.openweathermap.org/data/2.5/")
+            .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
