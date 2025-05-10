@@ -1,10 +1,12 @@
 package com.example.nepalweatherwidget.domain.repository
 
-import com.example.nepalweatherwidget.domain.model.AirQuality
+import com.example.nepalweatherwidget.core.result.Result
 import com.example.nepalweatherwidget.domain.model.WeatherData
+import com.example.nepalweatherwidget.domain.model.AirQualityData
+import kotlinx.coroutines.flow.Flow
 
 interface WeatherRepository {
-    suspend fun getWeatherAndAirQuality(location: String): Result<Pair<WeatherData, AirQuality>>
-    suspend fun getWeatherData(lat: Double, lon: Double): Result<WeatherData>
-    suspend fun getAirQuality(lat: Double, lon: Double): Result<AirQuality>
+    fun getWeatherData(location: String): Flow<Result<WeatherData>>
+    fun getAirQuality(location: String): Flow<Result<AirQualityData>>
+    suspend fun getWeatherAndAirQuality(location: String): Result<Pair<WeatherData, AirQualityData>>
 } 

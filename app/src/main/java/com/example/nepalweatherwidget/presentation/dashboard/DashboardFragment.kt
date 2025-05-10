@@ -18,7 +18,6 @@ import com.example.nepalweatherwidget.core.extension.setTemperatureSafe
 import com.example.nepalweatherwidget.core.extension.setTextResourceSafe
 import com.example.nepalweatherwidget.core.extension.setTextSafe
 import com.example.nepalweatherwidget.core.extension.setVisibilitySafe
-import com.example.nepalweatherwidget.core.network.NetworkMonitor
 import com.example.nepalweatherwidget.core.monitor.NetworkMonitor
 import com.example.nepalweatherwidget.core.util.Logger
 import com.example.nepalweatherwidget.databinding.FragmentDashboardBinding
