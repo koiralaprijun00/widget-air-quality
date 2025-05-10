@@ -50,13 +50,13 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
         appWidgetIds.forEach { appWidgetId ->
             val views = RemoteViews(context.packageName, R.layout.widget_weather)
             
-            views.setTextViewText(R.id.temperature, "${weather.temperature}°C")
-            views.setTextViewText(R.id.description, weather.description)
-            views.setTextViewText(R.id.humidity, "Humidity: ${weather.humidity}%")
-            views.setTextViewText(R.id.wind_speed, "Wind: ${weather.windSpeed} m/s")
-            views.setTextViewText(R.id.aqi, "AQI: ${airQuality.aqi}")
-            views.setTextViewText(R.id.pm25, "PM2.5: ${airQuality.pm25}")
-            views.setTextViewText(R.id.pm10, "PM10: ${airQuality.pm10}")
+            views.setTextViewText(R.id.widget_temperature, "${weather.temperature}°C")
+            views.setTextViewText(R.id.widget_description, weather.description)
+            views.setTextViewText(R.id.widget_humidity, "Humidity: ${weather.humidity}%")
+            views.setTextViewText(R.id.widget_wind_speed, "Wind: ${weather.windSpeed} m/s")
+            views.setTextViewText(R.id.widget_aqi, "AQI: ${airQuality.aqi}")
+            views.setTextViewText(R.id.widget_pm25, "PM2.5: ${airQuality.pm25}")
+            views.setTextViewText(R.id.widget_pm10, "PM10: ${airQuality.pm10}")
 
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
@@ -70,8 +70,8 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
     ) {
         appWidgetIds.forEach { appWidgetId ->
             val views = RemoteViews(context.packageName, R.layout.widget_weather)
-            views.setTextViewText(R.id.temperature, "Error")
-            views.setTextViewText(R.id.description, message)
+            views.setTextViewText(R.id.widget_temperature, "Error")
+            views.setTextViewText(R.id.widget_description, message)
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
     }
@@ -83,8 +83,8 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
     ) {
         appWidgetIds.forEach { appWidgetId ->
             val views = RemoteViews(context.packageName, R.layout.widget_weather)
-            views.setTextViewText(R.id.temperature, "Loading...")
-            views.setTextViewText(R.id.description, "Please wait")
+            views.setTextViewText(R.id.widget_temperature, "Loading...")
+            views.setTextViewText(R.id.widget_description, "Please wait")
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
     }

@@ -11,7 +11,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
-        android:name=".NepalWeatherApp"
+        android:name=".WeatherApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -55,7 +55,7 @@
         </receiver>
 
         <receiver
-            android:name=".AirQualityWidget"
+            android:name=".widget.AirQualityWidgetProvider"
             android:exported="true"
             android:label="Air Quality Widget">
             <intent-filter>
