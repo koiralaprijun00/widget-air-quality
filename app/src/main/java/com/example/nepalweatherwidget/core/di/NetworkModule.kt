@@ -1,6 +1,7 @@
 package com.example.nepalweatherwidget.core.di
 
 import com.example.nepalweatherwidget.BuildConfig
+import com.example.nepalweatherwidget.core.security.SecureApiKeyManager
 import com.example.nepalweatherwidget.data.remote.api.AirPollutionService
 import com.example.nepalweatherwidget.data.remote.api.GeocodingService
 import com.example.nepalweatherwidget.data.remote.api.WeatherService
@@ -8,6 +9,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -21,8 +23,25 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(
+        secureApiKeyManager: SecureApiKeyManager
+    ): OkHttpClient {
         return OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                runBlocking {
+                    val apiKey = secureApiKeyManager.getApiKey()
+                    val request = chain.request()
+                    val url = request.url.newBuilder()
+                        .addQueryParameter("appid", apiKey)
+                        .build()
+                    
+                    val newRequest = request.newBuilder()
+                        .url(url)
+                        .build()
+                    
+                    chain.proceed(newRequest)
+                }
+            }
             .addInterceptor(HttpLoggingInterceptor().apply {
                 level = if (BuildConfig.DEBUG) {
                     HttpLoggingInterceptor.Level.BODY
@@ -39,7 +58,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("https://api.openweathermap.org/data/2.5/")
+            .baseUrl(BuildConfig.OPENWEATHER_API_BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
