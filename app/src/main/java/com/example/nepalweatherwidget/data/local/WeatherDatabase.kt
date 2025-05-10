@@ -8,7 +8,10 @@ import com.example.nepalweatherwidget.data.local.entity.AirQualityEntity
 import com.example.nepalweatherwidget.data.local.entity.WeatherEntity
 
 @Database(
-    entities = [WeatherEntity::class, AirQualityEntity::class],
+    entities = [
+        WeatherEntity::class,
+        AirQualityEntity::class
+    ],
     version = 1,
     exportSchema = false
 )

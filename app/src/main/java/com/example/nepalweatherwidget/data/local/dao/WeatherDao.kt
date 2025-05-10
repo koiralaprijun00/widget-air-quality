@@ -18,6 +18,9 @@ interface WeatherDao {
     @Query("DELETE FROM weather_data WHERE location = :location")
     suspend fun deleteWeatherData(location: String)
 
-    @Query("SELECT * FROM weather_data WHERE timestamp < :timestamp")
-    suspend fun getOldWeatherData(timestamp: Long): List<WeatherEntity>
+    @Query("SELECT * FROM weather_data ORDER BY timestamp DESC LIMIT 1")
+    fun getLatestWeatherData(): Flow<WeatherEntity?>
+
+    @Query("SELECT * FROM weather_data WHERE timestamp > :timestamp")
+    fun getRecentWeatherData(timestamp: Long): Flow<List<WeatherEntity>>
 } 

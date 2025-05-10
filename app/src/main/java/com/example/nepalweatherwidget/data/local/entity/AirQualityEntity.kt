@@ -5,7 +5,8 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "air_quality_data")
 data class AirQualityEntity(
-    @PrimaryKey val location: String,
+    @PrimaryKey
+    val location: String,
     val aqi: Int,
     val pm25: Double,
     val pm10: Double,
