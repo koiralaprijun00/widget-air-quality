@@ -21,7 +21,7 @@ import com.example.nepalweatherwidget.R
 import com.example.nepalweatherwidget.core.error.WeatherException
 import com.example.nepalweatherwidget.databinding.FragmentDashboardBinding
 import com.example.nepalweatherwidget.domain.model.WeatherData
-import com.example.nepalweatherwidget.location.LocationService
+import com.example.nepalweatherwidget.core.location.LocationService
 import com.example.nepalweatherwidget.presentation.model.AirQualityUiState
 import com.example.nepalweatherwidget.presentation.viewmodel.DashboardUiState
 import com.example.nepalweatherwidget.presentation.viewmodel.DashboardViewModel
