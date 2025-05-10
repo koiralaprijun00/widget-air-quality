@@ -1,4 +1,4 @@
-package com.example.nepalweatherwidget.data.remote.model
+package com.example.nepalweatherwidget.domain.model.api
 
 import com.google.gson.annotations.SerializedName
 
@@ -9,6 +9,8 @@ data class WeatherResponse(
     val weather: List<Weather>,
     @SerializedName("wind")
     val wind: Wind,
+    @SerializedName("name")
+    val name: String,
     @SerializedName("dt")
     val timestamp: Long
 ) {

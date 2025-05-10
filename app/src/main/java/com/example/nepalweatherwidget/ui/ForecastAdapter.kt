@@ -2,18 +2,13 @@ package com.example.nepalweatherwidget.ui
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.nepalweatherwidget.databinding.ItemForecastBinding
-import com.example.nepalweatherwidget.data.model.ForecastItem
+import com.example.nepalweatherwidget.domain.model.ForecastItem
 
-class ForecastAdapter(
-    private var forecasts: List<ForecastItem>
-) : RecyclerView.Adapter<ForecastAdapter.ForecastViewHolder>() {
-
-    fun submitList(newForecasts: List<ForecastItem>) {
-        forecasts = newForecasts
-        notifyDataSetChanged()
-    }
+class ForecastAdapter : ListAdapter<ForecastItem, ForecastAdapter.ForecastViewHolder>(ForecastDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ForecastViewHolder {
         val binding = ItemForecastBinding.inflate(
@@ -25,10 +20,8 @@ class ForecastAdapter(
     }
 
     override fun onBindViewHolder(holder: ForecastViewHolder, position: Int) {
-        holder.bind(forecasts[position])
+        holder.bind(getItem(position))
     }
-
-    override fun getItemCount(): Int = forecasts.size
 
     class ForecastViewHolder(
         private val binding: ItemForecastBinding
@@ -36,11 +29,20 @@ class ForecastAdapter(
 
         fun bind(forecast: ForecastItem) {
             binding.apply {
-                tvDay.text = forecast.day
-                tvTemperature.text = forecast.temperature
+                tvDate.text = forecast.date
+                tvTemperature.text = "${forecast.temperature}°C"
                 tvDescription.text = forecast.description
-                ivWeatherIcon.setImageResource(forecast.iconRes)
             }
+        }
+    }
+
+    private class ForecastDiffCallback : DiffUtil.ItemCallback<ForecastItem>() {
+        override fun areItemsTheSame(oldItem: ForecastItem, newItem: ForecastItem): Boolean {
+            return oldItem.date == newItem.date
+        }
+
+        override fun areContentsTheSame(oldItem: ForecastItem, newItem: ForecastItem): Boolean {
+            return oldItem == newItem
         }
     }
 } 

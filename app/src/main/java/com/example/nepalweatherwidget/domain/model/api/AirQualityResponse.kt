@@ -1,4 +1,4 @@
-package com.example.nepalweatherwidget.data.remote.model
+package com.example.nepalweatherwidget.domain.model.api
 
 import com.google.gson.annotations.SerializedName
 

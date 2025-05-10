@@ -1,8 +1,10 @@
-package com.example.nepalweatherwidget.di
+package com.example.nepalweatherwidget.core.di
 
 import android.content.Context
 import androidx.room.Room
 import com.example.nepalweatherwidget.data.local.WeatherDatabase
+import com.example.nepalweatherwidget.data.local.dao.AirQualityDao
+import com.example.nepalweatherwidget.data.local.dao.WeatherDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -13,7 +15,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
-
+    
     @Provides
     @Singleton
     fun provideWeatherDatabase(
@@ -28,9 +30,13 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideWeatherDao(database: WeatherDatabase) = database.weatherDao()
+    fun provideWeatherDao(database: WeatherDatabase): WeatherDao {
+        return database.weatherDao()
+    }
 
     @Provides
     @Singleton
-    fun provideAirQualityDao(database: WeatherDatabase) = database.airQualityDao()
+    fun provideAirQualityDao(database: WeatherDatabase): AirQualityDao {
+        return database.airQualityDao()
+    }
 } 

@@ -1,6 +1,6 @@
 package com.example.nepalweatherwidget.data.repository
 
-import com.example.nepalweatherwidget.data.api.AirPollutionService
+import com.example.nepalweatherwidget.data.remote.api.AirPollutionService
 import com.example.nepalweatherwidget.data.model.AirPollutionData
 import com.example.nepalweatherwidget.domain.repository.AirPollutionRepository
 import javax.inject.Inject
