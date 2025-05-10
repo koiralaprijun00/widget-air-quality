@@ -15,7 +15,6 @@ import com.example.nepalweatherwidget.domain.model.AirQuality
 import com.example.nepalweatherwidget.domain.model.WeatherData
 import com.example.nepalweatherwidget.domain.repository.WeatherRepository
 import com.example.nepalweatherwidget.worker.WeatherUpdateWorker
-import com.example.widget_air_quality.data.model.AirQualityIndex
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -58,8 +57,8 @@ class TraditionalWeatherWidgetProvider : AppWidgetProvider() {
         appWidgetId: Int,
         newOptions: Bundle
     ) {
-        // Handle widget size changes
-        updateWidget(context, appWidgetManager, appWidgetId)
+        // Trigger a full update when widget size changes
+        onUpdate(context, appWidgetManager, intArrayOf(appWidgetId))
     }
     
     private fun updateWidget(

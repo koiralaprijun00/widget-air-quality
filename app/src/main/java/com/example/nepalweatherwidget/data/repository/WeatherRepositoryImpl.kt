@@ -1,5 +1,6 @@
 package com.example.nepalweatherwidget.data.repository
 
+import com.example.nepalweatherwidget.BuildConfig
 import com.example.nepalweatherwidget.core.util.ApiResult
 import com.example.nepalweatherwidget.data.local.dao.AirQualityDao
 import com.example.nepalweatherwidget.data.local.dao.WeatherDao
@@ -7,17 +8,14 @@ import com.example.nepalweatherwidget.data.local.entity.AirQualityEntity
 import com.example.nepalweatherwidget.data.local.entity.WeatherEntity
 import com.example.nepalweatherwidget.data.remote.api.AirPollutionService
 import com.example.nepalweatherwidget.data.remote.api.WeatherService
-import com.example.nepalweatherwidget.data.remote.mapper.AirQualityMapper
-import com.example.nepalweatherwidget.data.remote.mapper.WeatherMapper
+import com.example.nepalweatherwidget.data.remote.mapper.toAirQuality
+import com.example.nepalweatherwidget.data.remote.mapper.toWeatherData
 import com.example.nepalweatherwidget.domain.exception.WeatherException
 import com.example.nepalweatherwidget.domain.model.AirQuality
-import com.example.nepalweatherwidget.domain.model.ApiResult
 import com.example.nepalweatherwidget.domain.model.WeatherData
 import com.example.nepalweatherwidget.domain.network.NetworkMonitor
 import com.example.nepalweatherwidget.domain.repository.WeatherRepository
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.io.IOException
@@ -32,7 +30,7 @@ class WeatherRepositoryImpl @Inject constructor(
     private val networkMonitor: NetworkMonitor,
     private val weatherDao: WeatherDao,
     private val airQualityDao: AirQualityDao,
-    private val apiKey: String
+    @Named("openweather_api_key") private val apiKey: String
 ) : WeatherRepository {
 
     override suspend fun getWeatherAndAirQuality(location: String): ApiResult<Pair<WeatherData, AirQuality>> {
@@ -46,7 +44,7 @@ class WeatherRepositoryImpl @Inject constructor(
                     return@withContext ApiResult.Success(
                         Pair(
                             cachedWeather.toWeatherData(),
-                            cachedAirQuality.toAirQualityData()
+                            cachedAirQuality.toAirQuality()
                         )
                     )
                 }
@@ -150,7 +148,7 @@ class WeatherRepositoryImpl @Inject constructor(
         timestamp = timestamp
     )
 
-    private fun AirQualityEntity.toAirQualityData() = AirQuality(
+    private fun AirQualityEntity.toAirQuality() = AirQuality(
         aqi = aqi,
         pm25 = pm25,
         pm10 = pm10,
