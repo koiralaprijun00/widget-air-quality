@@ -7,16 +7,22 @@ import android.location.Location
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
-class LocationService private constructor(private val context: Context) {
+@Singleton
+class LocationService @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
     private val fusedLocationClient: FusedLocationProviderClient by lazy(LazyThreadSafetyMode.NONE) {
         LocationServices.getFusedLocationProviderClient(context)
     }
 
-    suspend fun getLastLocation(): Location? = suspendCoroutine<Location?> { continuation ->
+    suspend fun getLastLocation(): Location? = suspendCoroutine { continuation ->
         if (!hasLocationPermission()) {
             continuation.resume(null)
             return@suspendCoroutine
@@ -44,16 +50,5 @@ class LocationService private constructor(private val context: Context) {
             context,
             Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    companion object {
-        @Volatile
-        private var instance: LocationService? = null
-
-        fun getInstance(context: Context): LocationService {
-            return instance ?: synchronized(this) {
-                instance ?: LocationService(context.applicationContext).also { instance = it }
-            }
-        }
     }
 } 

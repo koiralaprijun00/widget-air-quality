@@ -16,6 +16,7 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
+import dagger.assisted.AssistedFactory
 
 @HiltWorker
 class WeatherUpdateWorker @AssistedInject constructor(
@@ -74,5 +75,10 @@ class WeatherUpdateWorker @AssistedInject constructor(
             WorkManager.getInstance(context)
                 .cancelUniqueWork(WORKER_TAG)
         }
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(appContext: Context, params: WorkerParameters): WeatherUpdateWorker
     }
 }

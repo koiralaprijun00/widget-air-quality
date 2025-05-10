@@ -21,8 +21,7 @@ import com.example.nepalweatherwidget.R
 import com.example.nepalweatherwidget.core.error.WeatherException
 import com.example.nepalweatherwidget.databinding.FragmentDashboardBinding
 import com.example.nepalweatherwidget.domain.model.WeatherData
-import com.example.nepalweatherwidget.core.location.LocationService
-import com.example.nepalweatherwidget.presentation.model.AirQualityUiState
+import com.example.nepalweatherwidget.location.LocationService
 import com.example.nepalweatherwidget.presentation.viewmodel.DashboardUiState
 import com.example.nepalweatherwidget.presentation.viewmodel.DashboardViewModel
 import com.google.android.material.snackbar.Snackbar
@@ -189,7 +188,6 @@ class DashboardFragment : Fragment() {
             is DashboardUiState.Loading -> showLoading()
             is DashboardUiState.Success -> {
                 showContent()
-                updateUI(state.weather, state.airQuality)
                 updateForecast(state.forecast)
                 updateOtherLocations(state.otherLocations)
             }
@@ -243,36 +241,6 @@ class DashboardFragment : Fragment() {
         }
     }
 
-    private fun updateUI(weather: WeatherData, airQuality: AirQualityUiState) {
-        binding.apply {
-            locationName.text = currentLocation
-            locationSub.text = if (isUsingCurrentLocation) {
-                getString(R.string.current_location)
-            } else {
-                getString(R.string.selected_location)
-            }
-            
-            weatherTemp.text = getString(R.string.temperature_format, weather.temperature.toInt())
-            weatherDesc.text = weather.description
-            feelsLike.text = getString(R.string.feels_like_format, weather.feelsLike.toInt())
-            windSpeed.text = getString(R.string.wind_speed_format, weather.windSpeed)
-            humidity.text = getString(R.string.humidity_format, weather.humidity)
-            
-            aqiValue.text = airQuality.aqi.toString()
-            aqiLabel.text = airQuality.status
-            aqiLabel.setTextColor(airQuality.statusColor)
-            aqiDesc.text = getAqiDescription(airQuality.aqi)
-            healthAdviceText.text = getHealthAdvice(airQuality.aqi)
-            
-            pm25Value.text = getString(R.string.pm25_format, airQuality.pm25)
-            pm10Value.text = getString(R.string.pm10_format, airQuality.pm10)
-            
-            val lastUpdateTime = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-                .format(java.util.Date(weather.timestamp))
-            lastUpdated.text = getString(R.string.last_update_format, lastUpdateTime)
-        }
-    }
-    
     private fun updateForecast(forecast: List<ForecastItem>) {
         forecastAdapter.submitList(forecast)
         binding.forecastSection.visibility = if (forecast.isEmpty()) View.GONE else View.VISIBLE
@@ -341,28 +309,6 @@ class DashboardFragment : Fragment() {
     
     private fun showErrorSnackbar(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
-    }
-    
-    private fun getAqiDescription(aqi: Int): String {
-        return when (aqi) {
-            in 0..50 -> getString(R.string.aqi_desc_good)
-            in 51..100 -> getString(R.string.aqi_desc_moderate)
-            in 101..150 -> getString(R.string.aqi_desc_unhealthy_sensitive)
-            in 151..200 -> getString(R.string.aqi_desc_unhealthy)
-            in 201..300 -> getString(R.string.aqi_desc_very_unhealthy)
-            else -> getString(R.string.aqi_desc_hazardous)
-        }
-    }
-    
-    private fun getHealthAdvice(aqi: Int): String {
-        return when (aqi) {
-            in 0..50 -> getString(R.string.health_advice_good)
-            in 51..100 -> getString(R.string.health_advice_moderate)
-            in 101..150 -> getString(R.string.health_advice_unhealthy_sensitive)
-            in 151..200 -> getString(R.string.health_advice_unhealthy)
-            in 201..300 -> getString(R.string.health_advice_very_unhealthy)
-            else -> getString(R.string.health_advice_hazardous)
-        }
     }
     
     fun updateLocation(location: String) {

@@ -5,7 +5,7 @@ import androidx.work.Configuration
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.example.nepalweatherwidget.widget.WidgetUpdateWorker
+import androidx.work.WorkerAssistedFactory
 import com.example.nepalweatherwidget.worker.WeatherUpdateWorker
 import dagger.Module
 import dagger.Provides
@@ -49,12 +49,10 @@ object WorkerModule {
     
     @Provides
     fun provideWorkerFactory(
-        weatherUpdateWorkerFactory: WeatherUpdateWorker.Factory,
-        widgetUpdateWorkerFactory: WidgetUpdateWorker.Factory
-    ): Map<Class<out ListenableWorker>, @JvmSuppressWildcards WorkerAssistedFactory<out ListenableWorker>> {
+        weatherUpdateWorkerFactory: WeatherUpdateWorker.Factory
+    ): Map<Class<out ListenableWorker>, @JvmSuppressWildcards WeatherUpdateWorker.Factory> {
         return mapOf(
-            WeatherUpdateWorker::class.java to weatherUpdateWorkerFactory,
-            WidgetUpdateWorker::class.java to widgetUpdateWorkerFactory
+            WeatherUpdateWorker::class.java to weatherUpdateWorkerFactory
         )
     }
 } 

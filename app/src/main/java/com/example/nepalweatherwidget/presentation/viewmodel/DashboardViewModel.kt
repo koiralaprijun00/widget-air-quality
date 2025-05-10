@@ -27,7 +27,6 @@ sealed class DashboardUiState {
     object Loading : DashboardUiState()
     data class Success(
         val weather: WeatherData,
-        val airQuality: AirQualityUiState,
         val forecast: List<ForecastItem> = emptyList(),
         val otherLocations: List<LocationItem> = emptyList()
     ) : DashboardUiState()
@@ -72,7 +71,6 @@ class DashboardViewModel @Inject constructor(
                     val (weather, airQuality) = result.data
                     _uiState.value = DashboardUiState.Success(
                         weather = weather,
-                        airQuality = AirQualityUiState.fromAirQuality(airQuality),
                         forecast = getMockForecast(), // TODO: Implement real forecast
                         otherLocations = getMockOtherLocations() // TODO: Implement real other locations
                     )
@@ -99,7 +97,6 @@ class DashboardViewModel @Inject constructor(
                     val (weather, airQuality) = result.data
                     _uiState.value = DashboardUiState.Success(
                         weather = weather,
-                        airQuality = AirQualityUiState.fromAirQuality(airQuality),
                         forecast = getMockForecast(), // TODO: Implement real forecast
                         otherLocations = getMockOtherLocations() // TODO: Implement real other locations
                     )
