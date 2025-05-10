@@ -46,9 +46,6 @@ captures/
 # Google Services (e.g. APIs or Firebase)
 google-services.json
 
-# Version control
-vcs.xml
-
 # lint
 lint/intermediates/
 lint/generated/
@@ -60,3 +57,6 @@ lint/tmp/
 
 # Windows
 Thumbs.db
+
+# New secrets.properties
+secrets.properties

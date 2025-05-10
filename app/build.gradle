@@ -5,6 +5,12 @@ plugins {
     id 'com.google.dagger.hilt.android'
 }
 
+def secretsFile = rootProject.file("secrets.properties")
+def secrets = new Properties()
+if (secretsFile.exists()) {
+    secrets.load(new FileInputStream(secretsFile))
+}
+
 android {
     namespace 'com.example.nepalweatherwidget'
     compileSdk 34
@@ -15,7 +21,9 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
-        buildConfigField "String", "OPENWEATHER_API_KEY", "\"a084f03dedc3e73373fdbcd8e6452d22\""
+        
+        // Load API key from secrets.properties
+        buildConfigField "String", "OPENWEATHER_API_KEY", "\"${secrets.getProperty('openweather_api_key', '')}\""
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
