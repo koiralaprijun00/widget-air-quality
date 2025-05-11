@@ -6,44 +6,44 @@ plugins {
 }
 
 android {
-    namespace 'com.example.nepalweatherwidget'
-    compileSdk 34
+    namespace = 'com.example.nepalweatherwidget'
+    compileSdkVersion = 34
 
     defaultConfig {
-        applicationId "com.example.nepalweatherwidget"
-        minSdk 24
-        targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        applicationId = "com.example.nepalweatherwidget"
+        minSdkVersion = 24
+        targetSdkVersion = 34
+        versionCode = 1
+        versionName = "1.0"
 
         // App Configuration
-        buildConfigField "String", "DEFAULT_LOCATION", "\"Kathmandu\""
-        buildConfigField "int", "WEATHER_UPDATE_INTERVAL_MINUTES", "30"
-        buildConfigField "int", "WIDGET_UPDATE_INTERVAL_MINUTES", "15"
-        buildConfigField "int", "CACHE_DURATION_MINUTES", "60"
-        buildConfigField "int", "MAX_RETRY_ATTEMPTS", "3"
-        buildConfigField "int", "RETRY_DELAY_SECONDS", "5"
+        buildConfigField("String", "DEFAULT_LOCATION", "\"Kathmandu\"")
+        buildConfigField("int", "WEATHER_UPDATE_INTERVAL_MINUTES", "30")
+        buildConfigField("int", "WIDGET_UPDATE_INTERVAL_MINUTES", "15")
+        buildConfigField("int", "CACHE_DURATION_MINUTES", "60")
+        buildConfigField("int", "MAX_RETRY_ATTEMPTS", "3")
+        buildConfigField("int", "RETRY_DELAY_SECONDS", "5")
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
-            useSupportLibrary true
+            useSupportLibrary = true
         }
     }
 
     buildTypes {
         debug {
-            buildConfigField "String", "OPENWEATHER_API_KEY", "\"${getApiKey()}\""
+            buildConfigField("String", "OPENWEATHER_API_KEY", "\"${getApiKey()}\"")
         }
         release {
-            buildConfigField "String", "OPENWEATHER_API_KEY", "\"${getApiKey()}\""
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField("String", "OPENWEATHER_API_KEY", "\"${getApiKey()}\"")
+            minifyEnabled = true
+            proguardFiles = [getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro']
         }
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
@@ -55,12 +55,12 @@ android {
     }
 
     buildFeatures {
-        compose true
-        buildConfig true
+        compose = true
+        buildConfig = true
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion '1.5.8'
+        kotlinCompilerExtensionVersion = '1.5.8'
     }
 
     packaging {
@@ -70,7 +70,7 @@ android {
     }
 
     kapt {
-        correctErrorTypes true
+        correctErrorTypes = true
         arguments {
             arg("dagger.fastInit", "enabled")
             arg("dagger.formatGeneratedSource", "disabled")
@@ -88,14 +88,15 @@ def getApiKey() {
 }
 
 dependencies {
-    def composeBom = platform('androidx.compose:compose-bom:2024.02.00')
-    implementation composeBom
-    androidTestImplementation composeBom
+    // Compose BOM
+    implementation platform("androidx.compose:compose-bom:2024.02.00")
+    androidTestImplementation platform("androidx.compose:compose-bom:2024.02.00")
 
     // Core Android
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
     implementation 'androidx.activity:activity-compose:1.8.2'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
 
     // Material Design
     implementation 'com.google.android.material:material:1.11.0'
