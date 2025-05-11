@@ -370,7 +370,7 @@ class WeatherRepositoryImpl @Inject constructor(
                 pm10 = airQuality.pm10,
                 timestamp = airQuality.timestamp
             )
-            airQualityDao.insertAirQualityData(entity)
+            airQualityDao.insertAirQuality(entity)
         } catch (e: Exception) {
             Logger.e("Failed to save air quality data to local database", e)
         }
