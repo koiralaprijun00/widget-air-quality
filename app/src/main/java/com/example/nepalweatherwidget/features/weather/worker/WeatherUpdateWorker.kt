@@ -35,7 +35,7 @@ class WeatherUpdateWorker @AssistedInject constructor(
         }
     }
 
-    @AssistedFactory
+    @dagger.assisted.AssistedFactory
     interface Factory : WorkerAssistedFactory<WeatherUpdateWorker>
 
     companion object {

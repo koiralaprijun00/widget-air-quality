@@ -70,5 +70,5 @@
     <color name="widget_surface">#FFFFFF</color>
     <color name="widget_outline">#CCCCCC</color>
     <color name="widget_text_primary">#222222</color>
-    <color name="widget_text_secondary">#888888</color>
+    <color name="widget_text_secondary">#757575</color>
 </resources>

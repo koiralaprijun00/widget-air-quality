@@ -34,4 +34,7 @@ interface WeatherDao {
 
     @Query("DELETE FROM saved_locations WHERE id = :locationId")
     suspend fun deleteLocation(locationId: String)
+
+    @Query("DELETE FROM weather")
+    suspend fun clearAll()
 } 

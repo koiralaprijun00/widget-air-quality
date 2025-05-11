@@ -12,20 +12,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ForecastMapper @Inject constructor() {
-    
+class ForecastMapper @Inject constructor(
+    private val baseMapper: BaseWeatherMapper
+) {
     fun toDomain(response: ForecastResponse): List<WeatherData> {
-        return response.list.map { forecastItem ->
-            WeatherData(
-                temperature = forecastItem.main.temp,
-                feelsLike = forecastItem.main.feelsLike,
-                description = forecastItem.weather.firstOrNull()?.description ?: "",
-                iconCode = forecastItem.weather.firstOrNull()?.icon ?: "",
-                humidity = forecastItem.main.humidity,
-                windSpeed = forecastItem.wind.speed,
-                timestamp = forecastItem.dt * 1000
-            )
-        }
+        return baseMapper.toWeatherDataList(response)
     }
     
     fun toForecastItem(weatherData: WeatherData): ForecastItem {

@@ -4,6 +4,8 @@ import com.example.nepalweatherwidget.core.security.ApiKeyManager
 import com.example.nepalweatherwidget.features.weather.data.remote.api.AirPollutionService
 import com.example.nepalweatherwidget.features.weather.data.remote.api.GeocodingService
 import com.example.nepalweatherwidget.features.weather.data.remote.api.WeatherService
+import com.example.nepalweatherwidget.core.di.qualifiers.WeatherApiService
+import com.example.nepalweatherwidget.core.di.qualifiers.AirQualityApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -58,12 +60,14 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    @WeatherApiService
     fun provideWeatherService(retrofit: Retrofit): WeatherService {
         return retrofit.create(WeatherService::class.java)
     }
 
     @Provides
     @Singleton
+    @AirQualityApiService
     fun provideAirPollutionService(retrofit: Retrofit): AirPollutionService {
         return retrofit.create(AirPollutionService::class.java)
     }

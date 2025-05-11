@@ -7,49 +7,18 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class WeatherMapper @Inject constructor() {
-    
+class WeatherMapper @Inject constructor(
+    private val baseMapper: BaseWeatherMapper
+) {
     fun toDomain(response: WeatherResponse): WeatherData {
-        return WeatherData(
-            temperature = response.main.temp,
-            feelsLike = response.main.feelsLike,
-            description = response.weather.firstOrNull()?.description ?: "",
-            iconCode = response.weather.firstOrNull()?.icon ?: "",
-            humidity = response.main.humidity,
-            windSpeed = response.wind.speed,
-            timestamp = response.timestamp * 1000,
-            location = response.name,
-            pressure = response.main.pressure,
-            visibility = response.visibility,
-            cloudiness = response.clouds.all,
-            sunrise = response.sys.sunrise,
-            sunset = response.sys.sunset
-        )
+        return baseMapper.toWeatherData(response)
     }
     
     fun toDomain(entity: WeatherEntity): WeatherData {
-        return WeatherData(
-            temperature = entity.temperature,
-            feelsLike = entity.feelsLike,
-            description = entity.description,
-            iconCode = entity.iconCode,
-            humidity = entity.humidity,
-            windSpeed = entity.windSpeed,
-            timestamp = entity.timestamp,
-            location = entity.location
-        )
+        return baseMapper.toWeatherData(entity)
     }
     
     fun toEntity(response: WeatherResponse): WeatherEntity {
-        return WeatherEntity(
-            location = response.name,
-            temperature = response.main.temp,
-            feelsLike = response.main.feelsLike,
-            description = response.weather.firstOrNull()?.description ?: "",
-            iconCode = response.weather.firstOrNull()?.icon ?: "",
-            humidity = response.main.humidity,
-            windSpeed = response.wind.speed,
-            timestamp = System.currentTimeMillis()
-        )
+        return baseMapper.toWeatherEntity(response)
     }
 } 
